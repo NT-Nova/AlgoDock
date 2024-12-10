@@ -1,0 +1,44 @@
+version: '3.8'
+
+services:
+  algorand-node:
+    build: .
+    image: algorand-node
+    container_name: algorand-node
+    restart: unless-stopped
+    ports:
+      - "8080:8080"  # Algorand Node API
+      - "4001:4001"  # Algorand Node Client (Goal)
+      - "4002:4002"  # Algorand Peer Communication
+    volumes:
+      - algorand-data:/algod/data       # Persistent data directory for Algorand
+      - algorand-logs:/algod/logs       # Persistent log directory for logs
+    secrets:
+      - ACCOUNT_MNEMONIC
+      - ALGOD_TOKEN
+      - WALLET_NAME
+      - WALLET_PASSWORD
+    environment:
+      ALGOD_ADDRESS: "http://0.0.0.0:4001"  # Use container-wide accessible address
+    networks:
+      - algorand-network
+
+volumes:
+  algorand-data:
+    driver: local
+  algorand-logs:
+    driver: local
+
+secrets:
+  ACCOUNT_MNEMONIC:
+    file: ./secrets/ACCOUNT_MNEMONIC  # Replace with actual path to your secret file
+  ALGOD_TOKEN:
+    file: ./secrets/ALGOD_TOKEN       # Replace with actual path to your secret file
+  WALLET_NAME:
+    file: ./secrets/WALLET_NAME       # Replace with actual path to your secret file
+  WALLET_PASSWORD:
+    file: ./secrets/WALLET_PASSWORD   # Replace with actual path to your secret file
+
+networks:
+  algorand-network:
+    driver: bridge
