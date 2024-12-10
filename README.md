@@ -42,16 +42,19 @@ Before starting, ensure you have the following tools installed on your system:
 
 1. Clone the Repository
 
+```bash
 git clone https://github.com/NT-Nova/AlgoDock.git
 cd AlgoDock
+```
 
 2. Prepare Secrets
 
 Create a secrets directory to securely store sensitive data:
 
+```bash
 mkdir secrets
 chmod 700 secrets
-
+```
 Add files for each secret:
 
 - ACCOUNT_MNEMONIC: Your 25-word Algorand account mnemonic.
@@ -61,12 +64,16 @@ Add files for each secret:
 
 Example:
 
+```bash
 echo -n "your_25_word_mnemonic_here" > secrets/ACCOUNT_MNEMONIC
 echo -n "your_algod_token_here" > secrets/ALGOD_TOKEN
 echo -n "your_wallet_name_here" > secrets/WALLET_NAME
 echo -n "your_wallet_password_here" > secrets/WALLET_PASSWORD
+```
 
+```bash
 chmod 600 secrets/*
+```
 
 ⚠️ Important: Replace placeholders with your actual credentials. Never expose these files publicly.
 
@@ -76,17 +83,22 @@ Download the genesis.json file for your desired network and place it in the algo
 
 The genesis file can be fetched dynamically by modifying the Dockerfile with the following build argument:
 
+```bash
 ARG GENESIS_URL="https://raw.githubusercontent.com/algorand/go-algorand/refs/heads/master/installer/genesis/${NETWORK}/genesis.json"
+```
 
 Alternatively, download the file manually:
 - MainNet:
 
+```bash
 wget -O algod/config/genesis.json https://raw.githubusercontent.com/algorand/go-algorand/refs/heads/master/installer/genesis/mainnet/genesis.json
-
+```
 
 - TestNet:
 
+```bash
 wget -O algod/config/genesis.json https://raw.githubusercontent.com/algorand/go-algorand/refs/heads/master/installer/genesis/testnet/genesis.json
+```
 
 4. Build and Run with Docker Compose
 
@@ -103,6 +115,7 @@ Verify the node is running:
 docker-compose ps
 
 🔧 Configuration
+
 - Environment Variables: Modify docker-compose.yml to change environment variables like ALGOD_ADDRESS.
 - Participation Key Validity: Adjust the KEY_VALIDITY_DURATION in auto_key_renewal.py to set the validity duration of participation keys (default: ~30 days).
 - Network Selection: Switch between MainNet and TestNet by downloading the respective genesis.json file or modifying the NETWORK build argument in the Dockerfile.
@@ -116,22 +129,24 @@ The container runs as a non-root user (algoranduser) to minimize security risks.
 Secure exposed ports (8080, 4001, 4002) by restricting access to trusted networks only.
 
 📈 Monitoring and Maintenance
+
 - View Logs:
 
 docker-compose logs -f algorand-node
-
 
 - Check Node Status:
 
 docker-compose exec algorand-node goal node status -d /algod/data
 
-
 - Update Algorand Software:
 
+```bash
 docker-compose pull
 docker-compose up -d
+```
 
 🛠 Troubleshooting
+
 - Node Not Synchronizing:
 Ensure network connectivity and proper firewall settings. Verify the server can connect to Algorand peer nodes.
 - Permission Issues:
@@ -145,18 +160,21 @@ Contributions are welcome! To contribute:
 1.Fork the repository.
 2.Create a feature branch:
 
+```bash
 git checkout -b feature/AmazingFeature
-
+```
 
 3.Commit your changes:
 
+```bash
 git commit -m "Add AmazingFeature"
-
+```
 
 4.Push to the branch:
 
+```bash
 git push origin feature/AmazingFeature
-
+```
 
 5.Open a pull request.
 
@@ -165,6 +183,7 @@ git push origin feature/AmazingFeature
 This project is licensed under the MIT License. See the LICENSE file for more details.
 
 🙏 Acknowledgments
+
 - Algorand: For their innovative blockchain technology.
 - Docker: For simplifying containerization.
 - Paweł Pierścionek (Urtho): For the insightful article on Algorand Key Registration.
