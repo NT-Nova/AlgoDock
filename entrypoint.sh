@@ -1,145 +1,136 @@
 #!/bin/bash
 
-set -e  # Exit on command failure
+set -e  # Exit immediately if a command exits with a non-zero status
 set -u  # Treat unset variables as an error
 
 # Paths and environment variables
 ALGORAND_DATA="/algod/data"
 LOG_FILE="/algod/logs/node.log"
-NETWORK=${NETWORK:-mainnet}  # Default to MainNet
+NETWORK=${NETWORK:-mainnet}  # Default network is MainNet
+GENESIS_URL="https://raw.githubusercontent.com/algorand/go-algorand/refs/heads/master/installer/genesis/${NETWORK}/genesis.json"
+CONFIG_URL="https://raw.githubusercontent.com/algorand/go-algorand/refs/heads/master/installer/config.json.example"
 CATCHPOINT_URL="https://algorand-catchpoints.s3.us-east-2.amazonaws.com/channel/$NETWORK/latest.catchpoint"
+
+# Helper functions
+log_info() { echo "[INFO] $*"; }
+log_error() { echo "[ERROR] $*" >&2; }
+exit_with_error() { log_error "$*"; exit 1; }
+
+# Function to ensure the data directory exists
+ensure_data_dir() {
+    if [ ! -d "$ALGORAND_DATA" ]; then
+        log_info "Creating data directory at $ALGORAND_DATA..."
+        mkdir -p "$ALGORAND_DATA"
+    fi
+}
+
+# Function to download genesis.json if not present
+ensure_genesis() {
+    log_info "Ensuring genesis.json exists for $NETWORK..."
+    if [ ! -f "${ALGORAND_DATA}/genesis.json" ]; then
+        log_info "genesis.json not found. Downloading from ${GENESIS_URL}..."
+        curl -fSL "${GENESIS_URL}" -o "${ALGORAND_DATA}/genesis.json" || exit_with_error "Failed to download genesis.json"
+    else
+        log_info "genesis.json already exists. Skipping download."
+    fi
+}
+
+# Function to download or configure config.json
+ensure_config() {
+    CONFIG_FILE="${ALGORAND_DATA}/config.json"
+    log_info "Ensuring config.json exists..."
+    if [ ! -f "$CONFIG_FILE" ]; then
+        log_info "config.json not found. Downloading from ${CONFIG_URL}..."
+        curl -fSL "${CONFIG_URL}" -o "$CONFIG_FILE" || exit_with_error "Failed to download config.json"
+    fi
+
+    # Add or enable EnableCatchup in config.json
+    log_info "Configuring $CONFIG_FILE for fast catchup..."
+    if grep -q '"EnableCatchup":' "$CONFIG_FILE"; then
+        sed -i.bak 's/"EnableCatchup":.*/"EnableCatchup": true,/' "$CONFIG_FILE"
+    else
+        sed -i.bak '1s/^/{ "EnableCatchup": true, /' "$CONFIG_FILE"
+    fi
+    log_info "Config.json configured successfully."
+}
 
 # Function to fetch the latest catchpoint
 fetch_catchpoint() {
-    echo "[INFO] Fetching the latest catchpoint for $NETWORK..."
-    CATCHPOINT=$(curl -s "$CATCHPOINT_URL" | tr -d '\n')
+    log_info "Fetching the latest catchpoint for $NETWORK..."
+    CATCHPOINT=$(curl -s "$CATCHPOINT_URL" | tr -d '\n') || exit_with_error "Failed to fetch catchpoint"
     if [ -z "$CATCHPOINT" ]; then
-        echo "[ERROR] Failed to retrieve the catchpoint. Exiting."
-        exit 1
+        exit_with_error "Catchpoint is empty. Check the network configuration."
     fi
-    echo "[INFO] Latest catchpoint for $NETWORK: $CATCHPOINT"
-}
-
-# Ensure the config.json is properly configured for fast catchup
-configure_fast_catchup() {
-    CONFIG_FILE="$ALGORAND_DATA/config.json"
-    
-    echo "[INFO] Configuring $CONFIG_FILE for fast catchup..."
-    
-    # Check if config.json exists; create it if not
-    if [ ! -f "$CONFIG_FILE" ]; then
-        echo "[INFO] config.json not found. Creating a new one..."
-        echo '{ "EnableCatchup": true }' > "$CONFIG_FILE"
-    else
-        # Update or add the EnableCatchup setting
-        if grep -q '"EnableCatchup":' "$CONFIG_FILE"; then
-            sed -i.bak 's/"EnableCatchup":.*/"EnableCatchup": true,/' "$CONFIG_FILE"
-        else
-            sed -i.bak '1s/^/{ "EnableCatchup": true, /' "$CONFIG_FILE"
-        fi
-    fi
-    
-    echo "[INFO] Configured $CONFIG_FILE for fast catchup."
+    log_info "Latest catchpoint: $CATCHPOINT"
 }
 
 # Function to apply fast catchup
-fast_catchup() {
+apply_fast_catchup() {
     fetch_catchpoint
-    echo "[INFO] Applying fast catchup with catchpoint: $CATCHPOINT"
-    if ! goal node catchup "$CATCHPOINT" -d "$ALGORAND_DATA"; then
-        echo "[ERROR] Fast catchup failed. Exiting."
-        exit 1
-    fi
+    log_info "Applying fast catchup with catchpoint: $CATCHPOINT..."
+    goal node catchup "$CATCHPOINT" -d "$ALGORAND_DATA" || exit_with_error "Fast catchup failed"
 }
 
-# Function to check node sync status
-is_synced() {
+# Function to check if the node is synchronized
+is_node_synced() {
     local status
-    status=$(goal node status -d "$ALGORAND_DATA" 2>&1 || echo "[ERROR] Unable to get node status.")
-    if echo "$status" | grep -q "Sync Time"; then
-        local sync_time
-        sync_time=$(echo "$status" | grep "Sync Time" | awk '{print $3}')
-        if [ "$sync_time" == "0.0s" ]; then
-            return 0  # Node is fully synchronized
-        fi
+    status=$(goal node status -d "$ALGORAND_DATA" 2>&1 || log_error "Unable to get node status")
+    if echo "$status" | grep -q "Sync Time: 0.0s"; then
+        return 0  # Node is synchronized
     fi
     return 1  # Node is not synchronized
 }
 
-# Function to wait for sync
-wait_for_sync() {
-    echo "[INFO] Waiting for the node to synchronize..."
-    until is_synced; do
-        echo "[INFO] Node is not yet synchronized. Retrying in 10 seconds..."
+# Function to monitor node synchronization
+monitor_sync() {
+    log_info "Waiting for the node to synchronize..."
+    until is_node_synced; do
+        log_info "Node is not synchronized yet. Retrying in 10 seconds..."
         sleep 10
     done
-    echo "[INFO] Node is fully synchronized."
+    log_info "Node is fully synchronized."
 }
 
-# Start the node
+# Function to start the Algorand node
 start_node() {
-    echo "[INFO] Starting the Algorand node..."
+    log_info "Starting the Algorand node..."
     if goal node start -d "$ALGORAND_DATA"; then
-        echo "[INFO] Node started successfully."
+        log_info "Algorand node started successfully."
     else
-        echo "[ERROR] Failed to start the node. Exiting."
-        exit 1
+        exit_with_error "Failed to start the Algorand node"
     fi
 }
 
-# Monitor logs
+# Function to monitor logs
 monitor_logs() {
-    # Ensure log file exists
-    if [ ! -f "$LOG_FILE" ]; then
-        echo "[INFO] Creating placeholder log file at $LOG_FILE..."
-        mkdir -p "$(dirname "$LOG_FILE")"
-        touch "$LOG_FILE"
-    fi
-
-    echo "[INFO] Monitoring logs from $LOG_FILE..."
+    log_info "Monitoring logs from $LOG_FILE..."
+    mkdir -p "$(dirname "$LOG_FILE")"
+    touch "$LOG_FILE"
     tail -f "$LOG_FILE" &
     TAIL_PID=$!
 }
 
-# Main logic
+# Main process
 main() {
-    # Ensure the data directory exists
-    if [ ! -d "$ALGORAND_DATA" ]; then
-        echo "[ERROR] Data directory $ALGORAND_DATA does not exist. Exiting."
-        exit 1
-    fi
-
-    # Ensure genesis.json is present
-    if [ ! -f "$ALGORAND_DATA/genesis.json" ]; then
-        echo "[ERROR] genesis.json not found in $ALGORAND_DATA. Exiting."
-        exit 1
-    fi
-
-    # Configure the node for fast catchup
-    configure_fast_catchup
-
-    # Start the node
+    ensure_data_dir
+    ensure_genesis
+    ensure_config
     start_node
-
-    # Monitor the logs
     monitor_logs
 
-    # Check if the node is already synchronized
-    if is_synced; then
-        echo "[INFO] Node is already synchronized."
+    if is_node_synced; then
+        log_info "Node is already synchronized."
     else
-        echo "[INFO] Node is not synchronized. Checking for existing blockchain data..."
         if [ -z "$(ls -A "$ALGORAND_DATA")" ]; then
-            echo "[INFO] Data directory is empty. Initiating fast catchup."
-            fast_catchup
+            log_info "Data directory is empty. Initiating fast catchup..."
+            apply_fast_catchup
         else
-            echo "[INFO] Resuming existing sync."
-            wait_for_sync
+            log_info "Resuming existing sync."
+            monitor_sync
         fi
     fi
 
-    # Keep the container running
-    wait "$TAIL_PID"
+    wait "$TAIL_PID"  # Keep the container running
 }
 
 # Execute the main process
