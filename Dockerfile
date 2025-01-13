@@ -4,7 +4,7 @@ FROM algorand/algod:latest
 # Set environment variables
 ENV DEBIAN_FRONTEND=noninteractive
 ENV ALGORAND_DATA=/algod/data
-ENV PATH="/algod/myenv/bin:$PATH" 
+ENV PATH="/root/.local/bin:/algod/myenv/bin:$PATH"
 
 # Optional ARGs to customize genesis URL (default: MainNet)
 ARG NETWORK="mainnet"
@@ -24,6 +24,9 @@ RUN python3 -m venv /algod/myenv && \
     /algod/myenv/bin/pip install --upgrade pip && \
     /algod/myenv/bin/pip install pipx && \
     /algod/myenv/bin/pipx install algokit
+
+# Enables and activate env in bash
+RUN echo "source /algod/myenv/bin/activate" > /root/.bashrc
 
 # Set up directories and copy scripts
 WORKDIR /algod
