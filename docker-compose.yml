@@ -10,7 +10,7 @@ services:
       - "4001:4001"  # Algorand Node Client (Goal)
       - "4002:4002"  # Algorand Peer Communication
     volumes:
-      - algorand-data:/algod/data       # Persistent data directory for Algorand
+      - ./data:/algod/data       # Persistent data directory for Algorand
       - algorand-logs:/algod/logs       # Persistent log directory for logs
     secrets:
       - ACCOUNT_MNEMONIC
