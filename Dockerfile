@@ -43,5 +43,10 @@ EXPOSE 8080 4001 4002
 # Set up volume for logs
 VOLUME ["/algod/logs"]
 
+# # Set the entrypoint
+# ENTRYPOINT ["/node/run/run.sh"]
+
 # Set the entrypoint
-ENTRYPOINT ["/node/run/run.sh"]
+COPY entrypoint.sh /node/run/entrypoint.sh
+RUN chmod +x /node/run/entrypoint.sh
+ENTRYPOINT ["/node/run/entrypoint.sh"]

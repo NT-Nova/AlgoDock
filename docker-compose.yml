@@ -19,6 +19,7 @@ services:
       - WALLET_PASSWORD
     environment:
       ALGOD_ADDRESS: "http://0.0.0.0:4001"  # Use container-wide accessible address
+      NETWORK: "mainnet"
     networks:
       - algorand-network
 
