@@ -109,7 +109,7 @@ apt-get upgrade -y >> "$LOG_FILE" 2>&1
 log_info "Installing required tools and security packages..."
 DEBIAN_FRONTEND=noninteractive apt-get install -y \
   ca-certificates curl gnupg lsb-release apt-transport-https \
-  software-properties-common ufw fail2ban apparmor apparmor-utils mosh whiptail git vim >> "$LOG_FILE" 2>&1
+  software-properties-common ufw fail2ban apparmor apparmor-utils mosh whiptail git vim python3-pip pipx >> "$LOG_FILE" 2>&1
 
 ###############################################################################
 # UI (Password and SSH Key Input)
@@ -235,6 +235,9 @@ apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin do
 log_info "Adding adebian to docker group..."
 usermod -aG docker adebian
 
+log_info "Adding adebian to docker group..."
+usermod -aG sudo adebian
+
 systemctl enable docker >> "$LOG_FILE" 2>&1
 systemctl start docker >> "$LOG_FILE" 2>&1
 
@@ -266,4 +269,16 @@ log_info "The 'adebian' user has been created with the provided password and SSH
 log_info "SSH is now configured on port $SSH_NEW_PORT. Please connect using: ssh -p $SSH_NEW_PORT adebian@<your_server_ip>"
 log_info "Docker and security tools have been installed and configured."
 log_info "UFW has been configured to allow Mosh, WireGuard, and the new SSH port."
+
+# Prompt the user for LazyDocker installation or update
+log_info "Do you want to install or update LazyDocker? (yes/no)"
+read -r user_response
+
+if [[ "$user_response" =~ ^[Yy][Ee][Ss]$|^[Yy]$ ]]; then
+  log_info "Running LazyDocker installation or update as user 'adebian'..."
+  sudo -u adebian bash -c "./update_lazydocker.sh" || die "Failed to install or update LazyDocker."
+else
+  log_info "Skipping LazyDocker installation or update."
+fi
+
 log_info "You can review the log at $LOG_FILE."
