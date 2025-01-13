@@ -4,7 +4,7 @@ FROM algorand/algod:latest
 # Set environment variables
 ENV DEBIAN_FRONTEND=noninteractive
 ENV ALGORAND_DATA=/algod/data
-ENV PATH="/algod/myenv/bin:$PATH"
+ENV PATH="/algod/myenv/bin:$PATH"  # Ensure venv binaries are in the PATH
 
 # Optional ARGs to customize genesis URL (default: MainNet)
 ARG NETWORK="mainnet"
@@ -17,33 +17,34 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     python3.11-venv \
     curl \
     jq && \
-    python3 -m pip install --upgrade pip && \
-    python3 -m pip install pipx && \
-    pipx install algokit && \
     rm -rf /var/lib/apt/lists/*
+
+# Set up and activate a Python virtual environment for pipx and algokit
+RUN python3 -m venv /algod/myenv && \
+    /algod/myenv/bin/pip install --upgrade pip && \
+    /algod/myenv/bin/pip install pipx && \
+    /algod/myenv/bin/pipx install algokit
 
 # Set up directories and copy scripts
 WORKDIR /algod
 RUN mkdir -p /algod/logs
 COPY check_node_metrics.py auto_key_renewal.py ./
 
-# Install Python dependencies in a virtual environment
-RUN python3 -m venv /algod/myenv && \
-    /algod/myenv/bin/pip install --no-cache-dir --upgrade pip && \
-    if [ -f requirements.txt ]; then \
+# Install Python dependencies in the virtual environment
+COPY requirements.txt /algod/
+RUN if [ -f requirements.txt ]; then \
         /algod/myenv/bin/pip install --no-cache-dir -r requirements.txt; \
     fi
 
 # Ensure genesis.json is present
 RUN if [ ! -f "${ALGORAND_DATA}/genesis.json" ]; then \
       echo "[INFO] genesis.json not found. Downloading from ${GENESIS_URL}" && \
-      curl -fSL "${GENESIS_URL}" -o "${ALGORAND_DATA}/genesis.json" || \
-      (echo "[ERROR] Failed to download genesis.json" && exit 1); \
+      curl -fSL "${GENESIS_URL}" -o "${ALGORAND_DATA}/genesis.json"; \
     else \
       echo "[INFO] Using existing genesis.json"; \
     fi
 
-# Expose necessary ports (REST API, Node communication)
+# Expose necessary ports
 EXPOSE 8080 4001 4002
 
 # Set up volume for logs
