@@ -4,7 +4,7 @@ FROM algorand/algod:latest
 # Set environment variables
 ENV DEBIAN_FRONTEND=noninteractive
 ENV ALGORAND_DATA=/algod/data
-ENV PATH="/algod/myenv/bin:$PATH"  # Ensure venv binaries are in the PATH
+ENV PATH="/algod/myenv/bin:$PATH" 
 
 # Optional ARGs to customize genesis URL (default: MainNet)
 ARG NETWORK="mainnet"
