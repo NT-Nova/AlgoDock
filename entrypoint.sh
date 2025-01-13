@@ -35,23 +35,37 @@ ensure_genesis() {
     fi
 }
 
-# Function to download or configure config.json
+# Function to ensure config.json exists and properly formatted
 ensure_config() {
     CONFIG_FILE="${ALGORAND_DATA}/config.json"
-    log_info "Ensuring config.json exists..."
+    echo "[INFO] Ensuring config.json exists and is properly formatted..."
+
+    # If config.json doesn't exist, download it
     if [ ! -f "$CONFIG_FILE" ]; then
-        log_info "config.json not found. Downloading from ${CONFIG_URL}..."
-        curl -fSL "${CONFIG_URL}" -o "$CONFIG_FILE" || exit_with_error "Failed to download config.json"
+        echo "[INFO] config.json not found. Downloading from ${CONFIG_URL}..."
+        curl -fSL "${CONFIG_URL}" -o "$CONFIG_FILE" || {
+            echo "[ERROR] Failed to download config.json. Exiting."
+            exit 1
+        }
     fi
 
-    # Add or enable EnableCatchup in config.json
-    log_info "Configuring $CONFIG_FILE for fast catchup..."
-    if grep -q '"EnableCatchup":' "$CONFIG_FILE"; then
-        sed -i.bak 's/"EnableCatchup":.*/"EnableCatchup": true,/' "$CONFIG_FILE"
+    # Use jq to safely modify JSON structure
+    echo "[INFO] Configuring $CONFIG_FILE for fast catchup..."
+    if jq -e '.EnableCatchup' "$CONFIG_FILE" >/dev/null 2>&1; then
+        # If "EnableCatchup" exists, set it to true
+        jq '.EnableCatchup = true' "$CONFIG_FILE" >"${CONFIG_FILE}.tmp" && mv "${CONFIG_FILE}.tmp" "$CONFIG_FILE"
     else
-        sed -i.bak '1s/^/{ "EnableCatchup": true, /' "$CONFIG_FILE"
+        # If "EnableCatchup" does not exist, add it to the JSON
+        jq '. + {EnableCatchup: true}' "$CONFIG_FILE" >"${CONFIG_FILE}.tmp" && mv "${CONFIG_FILE}.tmp" "$CONFIG_FILE"
     fi
-    log_info "Config.json configured successfully."
+
+    # Validate the resulting JSON structure
+    if ! jq empty "$CONFIG_FILE" >/dev/null 2>&1; then
+        echo "[ERROR] Invalid JSON structure in $CONFIG_FILE. Exiting."
+        exit 1
+    fi
+
+    echo "[INFO] Config.json configured successfully and validated."
 }
 
 # Function to fetch the latest catchpoint
@@ -114,18 +128,18 @@ monitor_logs() {
 main() {
     ensure_data_dir
     ensure_genesis
-    ensure_config
+    ensure_config  # Ensure config.json is properly set up
     start_node
     monitor_logs
 
     if is_node_synced; then
-        log_info "Node is already synchronized."
+        echo "[INFO] Node is already synchronized."
     else
         if [ -z "$(ls -A "$ALGORAND_DATA")" ]; then
-            log_info "Data directory is empty. Initiating fast catchup..."
+            echo "[INFO] Data directory is empty. Initiating fast catchup..."
             apply_fast_catchup
         else
-            log_info "Resuming existing sync."
+            echo "[INFO] Resuming existing sync."
             monitor_sync
         fi
     fi
