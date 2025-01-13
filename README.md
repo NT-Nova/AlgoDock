@@ -7,6 +7,7 @@ Effortlessly deploy your own Algorand validator node with automated participatio
 AlgoDock provides a seamless solution for deploying an Algorand validator node using Docker Compose. It includes an automated script for participation key renewal, ensuring your node remains active in the consensus process without manual intervention. Security is a top priority, with Docker Secrets used to handle sensitive data securely.
 
 📋 Table of Contents
+
 - Features
 - Prerequisites
 - Setup Guide
@@ -40,14 +41,14 @@ Before starting, ensure you have the following tools installed on your system:
 
 🛠 Setup Guide
 
-1. Clone the Repository
+## 1 Clone the Repository
 
 ```bash
 git clone https://github.com/NT-Nova/AlgoDock.git
 cd AlgoDock
 ```
 
-2. Prepare Secrets
+## 2 Prepare Secrets
 
 Create a secrets directory to securely store sensitive data:
 
@@ -55,6 +56,7 @@ Create a secrets directory to securely store sensitive data:
 mkdir secrets
 chmod 700 secrets
 ```
+
 Add files for each secret:
 
 - ACCOUNT_MNEMONIC: Your 25-word Algorand account mnemonic.
@@ -77,7 +79,7 @@ chmod 600 secrets/*
 
 ⚠️ Important: Replace placeholders with your actual credentials. Never expose these files publicly.
 
-3. Configure the Network
+## 3 Configure the Network
 
 Download the genesis.json file for your desired network and place it in the algod/config directory.
 
@@ -88,6 +90,7 @@ ARG GENESIS_URL="https://raw.githubusercontent.com/algorand/go-algorand/refs/hea
 ```
 
 Alternatively, download the file manually:
+
 - MainNet:
 
 ```bash
@@ -100,7 +103,7 @@ wget -O algod/config/genesis.json https://raw.githubusercontent.com/algorand/go-
 wget -O algod/config/genesis.json https://raw.githubusercontent.com/algorand/go-algorand/refs/heads/master/installer/genesis/testnet/genesis.json
 ```
 
-4. Build and Run with Docker Compose
+## 4 Build and Run with Docker Compose
 
 Build the Docker image:
 
@@ -190,5 +193,3 @@ This project is licensed under the MIT License. See the LICENSE file for more de
 - Community Contributors: For their continuous support and feedback.
 
 🚀 Empower your blockchain journey with an automated and secure Algorand validator node deployment using AlgoDock!
-
-Let me know if additional refinements are needed!
