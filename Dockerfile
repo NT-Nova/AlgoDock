@@ -1,5 +1,5 @@
 # Use the official Algorand Docker image as the base
-FROM algorand/go-algorand
+FROM algorand/algod:latest
 
 # Set environment variables
 ENV DEBIAN_FRONTEND=noninteractive
@@ -7,29 +7,32 @@ ENV ALGORAND_DATA=/algod/data
 
 # Optional ARGs to customize genesis URL (default: MainNet)
 ARG NETWORK="mainnet"
-ARG GENESIS_URL="hhttps://raw.githubusercontent.com/algorand/go-algorand/refs/heads/master/installer/genesis/${NETWORK}/genesis.json"
+ARG GENESIS_URL="https://raw.githubusercontent.com/algorand/go-algorand/refs/heads/master/installer/genesis/${NETWORK}/genesis.json"
 
 # Update and install dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
     python3 \
     python3-pip \
+    python3.11-venv \
+    curl \
     && rm -rf /var/lib/apt/lists/*
 
-# Set up directories for logs
+# Set up directories and copy scripts
+WORKDIR /algod
 RUN mkdir -p /algod/logs
+COPY check_node_metrics.py auto_key_renewal.py ./
 
-# Copy Python scripts into the container
-COPY check_node_metrics.py /algod/
-COPY auto_key_renewal.py /algod/
+# Install Python dependencies in a virtual environment
+RUN python3 -m venv /algod/myenv && \
+    /algod/myenv/bin/pip install --no-cache-dir --upgrade pip && \
+    if [ -f requirements.txt ]; then \
+        /algod/myenv/bin/pip install --no-cache-dir -r requirements.txt; \
+    fi
 
-# Install Python dependencies (if any)
-COPY requirements.txt /algod/requirements.txt
-RUN pip3 install --no-cache-dir -r /algod/requirements.txt
-
-# Check for genesis.json and download if it doesn't exist
-RUN if [ ! -f ${ALGORAND_DATA}/genesis.json ]; then \
+# Ensure genesis.json is present
+RUN if [ ! -f "${ALGORAND_DATA}/genesis.json" ]; then \
       echo "[INFO] genesis.json not found. Downloading from ${GENESIS_URL}" && \
-      curl -fSL "${GENESIS_URL}" -o ${ALGORAND_DATA}/genesis.json; \
+      curl -fSL "${GENESIS_URL}" -o "${ALGORAND_DATA}/genesis.json"; \
     else \
       echo "[INFO] Using existing genesis.json"; \
     fi
