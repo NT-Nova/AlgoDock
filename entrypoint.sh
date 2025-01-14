@@ -35,37 +35,51 @@ ensure_genesis() {
     fi
 }
 
-# Function to ensure config.json exists and properly formatted
+# Function to ensure config.json exists and is properly formatted
 ensure_config() {
     CONFIG_FILE="${ALGORAND_DATA}/config.json"
-    echo "[INFO] Ensuring config.json exists and is properly formatted..."
+    log_info "Ensuring config.json exists and is properly formatted..."
 
     # If config.json doesn't exist, download it
     if [ ! -f "$CONFIG_FILE" ]; then
-        echo "[INFO] config.json not found. Downloading from ${CONFIG_URL}..."
+        log_info "config.json not found. Downloading from ${CONFIG_URL}..."
         curl -fSL "${CONFIG_URL}" -o "$CONFIG_FILE" || {
-            echo "[ERROR] Failed to download config.json. Exiting."
+            log_error "Failed to download config.json. Exiting."
             exit 1
         }
     fi
 
-    # Use jq to safely modify JSON structure
-    echo "[INFO] Configuring $CONFIG_FILE for fast catchup..."
-    if jq -e '.EnableCatchup' "$CONFIG_FILE" >/dev/null 2>&1; then
-        # If "EnableCatchup" exists, set it to true
-        jq '.EnableCatchup = true' "$CONFIG_FILE" >"${CONFIG_FILE}.tmp" && mv "${CONFIG_FILE}.tmp" "$CONFIG_FILE"
-    else
-        # If "EnableCatchup" does not exist, add it to the JSON
-        jq '. + {EnableCatchup: true}' "$CONFIG_FILE" >"${CONFIG_FILE}.tmp" && mv "${CONFIG_FILE}.tmp" "$CONFIG_FILE"
-    fi
+    # Recommended configuration changes
+    RECOMMENDED_CONFIG=$(cat <<EOF
+{
+    "EnableCatchup": true,
+    "EndpointAddress": "0.0.0.0:4001",
+    "EnableRestAPI": true,
+    "DNSSecurityFlags": 9,
+    "DisableAPIAuth": false,
+    "DisableLocalhostConnectionRateLimit": true,
+    "EnableGossipBlockService": true,
+    "EnableGossipService": true,
+    "EnableTxBacklogRateLimiting": true,
+    "EnableMetricReporting": true,
+    "EnableAgreementReporting": true,
+    "EnableP2P": true,
+    "EnableIncomingMessageFilter": true,
+    "FallbackDNSResolverAddress": "8.8.8.8"
+}
+EOF
+)
+
+    log_info "Merging recommended settings into config.json..."
+    jq -s '.[0] * .[1]' "$CONFIG_FILE" <(echo "$RECOMMENDED_CONFIG") > "${CONFIG_FILE}.tmp" && mv "${CONFIG_FILE}.tmp" "$CONFIG_FILE"
 
     # Validate the resulting JSON structure
     if ! jq empty "$CONFIG_FILE" >/dev/null 2>&1; then
-        echo "[ERROR] Invalid JSON structure in $CONFIG_FILE. Exiting."
+        log_error "Invalid JSON structure in $CONFIG_FILE. Exiting."
         exit 1
     fi
 
-    echo "[INFO] Config.json configured successfully and validated."
+    log_info "Config.json configured successfully and validated."
 }
 
 # Function to fetch the latest catchpoint
@@ -88,16 +102,31 @@ apply_fast_catchup() {
 # Function to check if the node is synchronized
 is_node_synced() {
     local status
-    status=$(goal node status -d "$ALGORAND_DATA" 2>&1 || log_error "Unable to get node status")
-    if echo "$status" | grep -q "Sync Time: 0.0s"; then
-        return 0  # Node is synchronized
+    status=$(goal node status -d "$ALGORAND_DATA" 2>&1) || { log_error "Unable to get node status"; return 1; }
+
+    # Attempt to extract the "Sync Time Remaining" field.
+    # Adjust the parsing if the output format differs.
+    local sync_time_rem
+    sync_time_rem=$(echo "$status" | grep "Sync Time Remaining" | awk -F '│' '{gsub(/[^0-9]/,"",$3); print $3}')
+
+    local sync_time
+    sync_time=$(echo "$status" | grep "Sync Time:" | awk -F '│' '{gsub(/[^0-9]/,"",$2); print $2}')
+
+    log_info "Parsed sync time remaining: [$sync_time_rem] and sync time: [$sync_time]."
+
+    # Consider the node synced when both times are zero
+    if [[ "$sync_time_rem" == "0" && "$sync_time" == "0" ]]; then
+        return 0
     fi
-    return 1  # Node is not synchronized
+    return 1
 }
 
-# Function to monitor node synchronization
+# Function to monitor node synchronization with an initial delay
 monitor_sync() {
-    log_info "Waiting for the node to synchronize..."
+    log_info "Waiting for the node to stabilize before checking sync status..."
+    sleep 15
+
+    log_info "Monitoring node synchronization..."
     until is_node_synced; do
         log_info "Node is not synchronized yet. Retrying in 10 seconds..."
         sleep 10
@@ -130,16 +159,23 @@ main() {
     ensure_genesis
     ensure_config  # Ensure config.json is properly set up
     start_node
+
+    # Start monitoring logs so we can see detailed output.
     monitor_logs
 
+    # Allow an initial delay for the node's status to settle
+    sleep 15
+
     if is_node_synced; then
-        echo "[INFO] Node is already synchronized."
+        log_info "Node is already synchronized."
     else
-        if [ -z "$(ls -A "$ALGORAND_DATA")" ]; then
-            echo "[INFO] Data directory is empty. Initiating fast catchup..."
+        # If the data directory is completely empty (aside from genesis/config),
+        # perform a fast catchup; otherwise, continue syncing.
+        if [ -z "$(ls -A "$ALGORAND_DATA" 2>/dev/null)" ]; then
+            log_info "Data directory is empty. Initiating fast catchup..."
             apply_fast_catchup
         else
-            echo "[INFO] Resuming existing sync."
+            log_info "Resuming existing sync process."
             monitor_sync
         fi
     fi
