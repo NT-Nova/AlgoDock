@@ -1,152 +1,214 @@
+#!/usr/bin/env python3
+
 import os
 import subprocess
 import time
+import json
+from datetime import datetime
 from algosdk.v2client import algod
 from algosdk import mnemonic
-from datetime import datetime
+from rich.console import Console
+from rich.logging import RichHandler
 
-# Constants: Set participation key validity and script behavior
-KEY_VALIDITY_DURATION = 1_000_000  # ~30 days in Algorand rounds
-CHECK_INTERVAL = 24 * 60 * 60      # Check for renewal once a day (in seconds)
-SECRETS_PATH = "/run/secrets"      # Path where Docker secrets are mounted
+# Setup logging and console
+import logging
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(message)s",
+    datefmt="[%X]",
+    handlers=[RichHandler(rich_tracebacks=True)]
+)
+logger = logging.getLogger("auto_key_renewal")
+console = Console()
 
-def read_secret(secret_name: str) -> str:
+###############################################################################
+# CONFIGURATION
+###############################################################################
+class Config:
     """
-    Reads a secret from the Docker secrets directory.
-
-    Args:
-        secret_name (str): The name of the secret file to read.
-
-    Returns:
-        str: The content of the secret file.
-
-    Raises:
-        SystemExit: If the secret cannot be read.
+    Configuration for the key renewal script.
     """
-    secret_path = os.path.join(SECRETS_PATH, secret_name)
-    try:
-        with open(secret_path, 'r') as file:
-            return file.read().strip()
-    except Exception as e:
-        print(f"[ERROR] Failed to read secret {secret_name}: {str(e)}")
-        exit(1)
+    NODE_DIR = os.getenv("NODE_DIR", "/algod/data")
+    ALGOD_ADDRESS = os.getenv("ALGOD_ADDRESS", "http://localhost:4001")
+    ALGOD_TOKEN_PATH = os.getenv("ALGOD_TOKEN_PATH", f"{NODE_DIR}/algod.token")
+    WALLET_NAME = os.getenv("WALLET_NAME", "my_wallet")
+    ACCOUNT_MNEMONIC = os.getenv("ACCOUNT_MNEMONIC", None)
+    WALLET_PASSWORD = os.getenv("WALLET_PASSWORD", None)
+    KEY_VALIDITY_DURATION = int(os.getenv("KEY_VALIDITY_DURATION", 1_000_000))  # ~30 days
+    CHECK_INTERVAL = int(os.getenv("CHECK_INTERVAL", 24 * 60 * 60))  # 24 hours
+    LOCAL_STORE_FILE = os.path.join(NODE_DIR, "accounts.json")
 
-# Read secrets from Docker secrets
-ALGOD_TOKEN = read_secret("ALGOD_TOKEN")
-WALLET_PASSWORD = read_secret("WALLET_PASSWORD")
-ACCOUNT_MNEMONIC = read_secret("ACCOUNT_MNEMONIC")
-WALLET_NAME = read_secret("WALLET_NAME")
+    @staticmethod
+    def get_algod_token() -> str:
+        """
+        Retrieve Algod token either from environment or file.
+        """
+        try:
+            if os.getenv("ALGOD_TOKEN"):
+                return os.getenv("ALGOD_TOKEN")
+            if os.path.exists(Config.ALGOD_TOKEN_PATH):
+                with open(Config.ALGOD_TOKEN_PATH, "r") as file:
+                    return file.read().strip()
+            raise FileNotFoundError("Algod token not found in environment or token file.")
+        except FileNotFoundError as e:
+            logger.critical(f"{e}")
+            console.print(f"[red][CRITICAL][/red] {e}")
+            exit(1)
+        except Exception as e:
+            logger.critical(f"Unexpected error while fetching Algod token: {e}")
+            console.print(f"[red][CRITICAL][/red] Unexpected error: {e}")
+            exit(1)
 
-# Read optional environment variables
-ALGOD_ADDRESS = os.getenv("ALGOD_ADDRESS", "http://0.0.0.0:4001")
-
+###############################################################################
+# HELPER FUNCTIONS
+###############################################################################
 def get_algod_client() -> algod.AlgodClient:
     """
     Initialize and return an AlgodClient instance.
-
-    Returns:
-        algod.AlgodClient: A client for interacting with the Algorand node.
     """
     try:
-        return algod.AlgodClient(ALGOD_TOKEN, ALGOD_ADDRESS)
+        return algod.AlgodClient(Config.get_algod_token(), Config.ALGOD_ADDRESS)
     except Exception as e:
-        print(f"[CRITICAL] Failed to initialize Algod client: {str(e)}")
+        logger.critical(f"Failed to initialize Algod client: {e}")
+        console.print(f"[red][CRITICAL][/red] Failed to initialize Algod client: {e}")
         exit(1)
 
-def get_account_address() -> str:
+def load_local_store() -> dict:
     """
-    Retrieve the public key (address) from the account mnemonic.
-
-    Returns:
-        str: The public address of the account.
+    Load account addresses and names from the local store file.
     """
     try:
-        return mnemonic.to_public_key(ACCOUNT_MNEMONIC)
+        if not os.path.exists(Config.LOCAL_STORE_FILE):
+            raise FileNotFoundError(f"Local store file not found: {Config.LOCAL_STORE_FILE}")
+        with open(Config.LOCAL_STORE_FILE, "r", encoding="utf-8") as file:
+            return json.load(file)
+    except FileNotFoundError as e:
+        logger.error(f"{e}")
+        console.print(f"[yellow][WARNING][/yellow] {e}")
+        return {}
+    except json.JSONDecodeError as e:
+        logger.error(f"Failed to parse local store file: {e}")
+        console.print(f"[red][ERROR][/red] Failed to parse local store file: {e}")
+        return {}
     except Exception as e:
-        print(f"[CRITICAL] Failed to retrieve account address from mnemonic: {str(e)}")
+        logger.error(f"Unexpected error loading local store: {e}")
+        console.print(f"[red][ERROR][/red] Unexpected error: {e}")
+        return {}
+
+def get_default_account() -> str:
+    """
+    Retrieve the default account address from the local store.
+    """
+    try:
+        store = load_local_store()
+        default_account = store.get("default_account")
+        if not default_account:
+            raise ValueError("No default account configured in the local store.")
+        return default_account
+    except ValueError as e:
+        logger.warning(f"{e}")
+        console.print(f"[yellow][WARNING][/yellow] {e}")
+        return ""
+
+def run_goal_command(command: list):
+    """
+    Execute a 'goal' CLI command.
+    """
+    try:
+        result = subprocess.run(command, check=True, capture_output=True, text=True)
+        logger.info(f"Command succeeded: {' '.join(command)}")
+        return result.stdout
+    except subprocess.CalledProcessError as e:
+        error_output = e.stderr.strip() if e.stderr else str(e)
+        logger.error(f"Command failed: {' '.join(command)}\nError: {error_output}")
+        console.print(f"[red][ERROR][/red] Command failed: {error_output}")
+        raise
+    except FileNotFoundError:
+        logger.critical(f"'goal' CLI tool not found. Ensure it is installed and accessible.")
+        console.print("[red][CRITICAL][/red] 'goal' CLI tool not found.")
         exit(1)
+    except Exception as e:
+        logger.error(f"Unexpected error while executing command: {e}")
+        console.print(f"[red][ERROR][/red] Unexpected error: {e}")
+        raise
 
-def generate_new_participation_key(account_address: str, first_round: int, last_round: int):
+###############################################################################
+# PARTICIPATION KEY MANAGEMENT
+###############################################################################
+def generate_participation_key(account_address: str, first_round: int, last_round: int):
     """
-    Generate a new participation key for the given account using the 'goal' CLI.
-
-    Args:
-        account_address (str): The Algorand account address.
-        first_round (int): The first round of the key's validity.
-        last_round (int): The last round of the key's validity.
+    Generate a new participation key for the account.
     """
+    command = [
+        "goal", "account", "addpartkey",
+        "-a", account_address,
+        "--roundFirst", str(first_round),
+        "--roundLast", str(last_round),
+        "-w", Config.WALLET_NAME,
+        "--password", Config.WALLET_PASSWORD
+    ]
     try:
-        command = [
-            "goal", "account", "addpartkey",
-            "-a", account_address,
-            "--roundFirst", str(first_round),
-            "--roundLast", str(last_round),
-            "-w", WALLET_NAME,
-            "--password", WALLET_PASSWORD
-        ]
-        subprocess.run(command, check=True, capture_output=True)
-        print(f"[INFO] New participation key generated for rounds {first_round} to {last_round}.")
-    except subprocess.CalledProcessError as e:
-        error_message = e.stderr.decode('utf-8') if e.stderr else str(e)
-        print(f"[ERROR] Error generating participation key: {error_message}")
+        run_goal_command(command)
+        logger.info(f"Participation key generated for rounds {first_round} to {last_round}.")
+    except Exception:
+        logger.error(f"Failed to generate participation key for address {account_address}.")
 
-def delete_old_keys(account_address: str):
+def clear_old_participation_keys(account_address: str):
     """
-    Remove old participation keys for the given account using the 'goal' CLI.
-
-    Args:
-        account_address (str): The Algorand account address.
+    Remove old participation keys from the account.
     """
+    command = [
+        "goal", "account", "clearpartkey",
+        "-a", account_address,
+        "-w", Config.WALLET_NAME,
+        "--password", Config.WALLET_PASSWORD
+    ]
     try:
-        command = [
-            "goal", "account", "clearpartkey",
-            "-a", account_address,
-            "-w", WALLET_NAME,
-            "--password", WALLET_PASSWORD
-        ]
-        subprocess.run(command, check=True, capture_output=True)
-        print(f"[INFO] Old participation keys cleared for account {account_address}.")
-    except subprocess.CalledProcessError as e:
-        # It's possible no keys are present yet, so handle that gracefully.
-        error_message = e.stderr.decode('utf-8') if e.stderr else str(e)
-        print(f"[WARNING] Could not clear old participation keys: {error_message}")
+        run_goal_command(command)
+        logger.info(f"Old participation keys cleared for account {account_address}.")
+    except Exception:
+        logger.warning(f"Failed to clear old keys for address {account_address}.")
 
-def check_and_renew_keys():
+def renew_participation_key():
     """
-    Checks the current blockchain round and renews the participation key if necessary.
+    Renew the participation key if necessary.
     """
     try:
         client = get_algod_client()
-        account_address = get_account_address()
+        account_address = get_default_account()
 
-        # Get the current blockchain status
+        if not account_address:
+            logger.error("No default account available to renew keys.")
+            return
+
+        # Get current blockchain status
         status = client.status()
         current_round = status.get("last-round", 0)
-
-        # Define the validity period for the new participation key
         first_round = current_round + 1
-        last_round = first_round + KEY_VALIDITY_DURATION
+        last_round = first_round + Config.KEY_VALIDITY_DURATION
 
-        print(f"[INFO] Current Round: {current_round}")
-        print(f"[INFO] Generating new key valid from round {first_round} to {last_round}.")
+        logger.info(f"Current Round: {current_round}")
+        logger.info(f"Renewing key for rounds {first_round} to {last_round}.")
 
-        # Delete old participation keys
-        delete_old_keys(account_address)
-
-        # Generate new participation key
-        generate_new_participation_key(account_address, first_round, last_round)
-
+        # Clear old keys and create a new one
+        clear_old_participation_keys(account_address)
+        generate_participation_key(account_address, first_round, last_round)
     except Exception as e:
-        print(f"[ERROR] An error occurred during key renewal: {str(e)}")
+        logger.error(f"An error occurred during participation key renewal: {e}")
+        console.print(f"[red][ERROR][/red] {e}")
 
+###############################################################################
+# MAIN LOOP
+###############################################################################
 if __name__ == "__main__":
-    print(f"[INFO] Starting participation key renewal script at {datetime.now()}")
+    logger.info(f"Starting key renewal script at {datetime.now()}")
+
     while True:
         try:
-            check_and_renew_keys()
+            renew_participation_key()
         except Exception as e:
-            # Catch any unexpected errors to prevent the script from crashing
-            print(f"[CRITICAL] Unexpected error: {str(e)}")
+            logger.critical(f"Unexpected error: {e}")
+            console.print(f"[red][CRITICAL][/red] Unexpected error: {e}")
 
-        print(f"[INFO] Sleeping until next check ({CHECK_INTERVAL // 3600} hours)...")
-        time.sleep(CHECK_INTERVAL)
+        logger.info(f"Sleeping for {Config.CHECK_INTERVAL // 3600} hours...")
+        time.sleep(Config.CHECK_INTERVAL)

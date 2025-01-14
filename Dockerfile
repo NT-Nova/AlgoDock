@@ -28,11 +28,21 @@ RUN python3 -m venv /algod/myenv && \
 
 # Enables and activate env in bash
 RUN echo "source /algod/myenv/bin/activate" > /root/.bashrc
+RUN algokit completions install
 
 # Set up directories and copy scripts
 WORKDIR /algod
 RUN mkdir -p /algod/logs
-COPY check_node_metrics.py auto_key_renewal.py ./
+RUN mkdir -p /algod/scripts
+
+COPY algo_NodeOps.py auto_key_renewal.py monitor.py /algod/scripts/
+RUN echo "\
+# Add aliases for scripts\n\
+alias ano='python /algod/scripts/algo_NodeOps.py'\n\
+alias akr='python /algod/scripts/auto_key_renewal.py'\n\
+alias mon='python /algod/scripts/monitor.py'\
+# Run algo_NodeOps.py on bash start\n\
+/algod/scripts/algo_NodeOps.py " >> /root/.bashrc
 
 # Install Python dependencies in the virtual environment
 COPY requirements.txt /algod/
