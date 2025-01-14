@@ -6,7 +6,7 @@ set -u  # Treat unset variables as an error
 # Paths and environment variables
 ALGORAND_DATA="/algod/data"
 LOG_FILE="/algod/logs/node.log"
-NETWORK=${NETWORK:-mainnet}  # Default network is MainNet
+NETWORK=${NETWORK:-mainnet}  # Default network is MainNet (lowercase)
 GENESIS_URL="https://raw.githubusercontent.com/algorand/go-algorand/refs/heads/master/installer/genesis/${NETWORK}/genesis.json"
 CONFIG_URL="https://raw.githubusercontent.com/algorand/go-algorand/refs/heads/master/installer/config.json.example"
 CATCHPOINT_URL="https://algorand-catchpoints.s3.us-east-2.amazonaws.com/channel/$NETWORK/latest.catchpoint"
@@ -96,9 +96,8 @@ fetch_catchpoint() {
 apply_fast_catchup() {
     fetch_catchpoint
     log_info "Initiating fast catchup using catchpoint: [$CATCHPOINT]..."
-    # Run the catchup command and log if it starts successfully
     if goal node catchup "$CATCHPOINT" -d "$ALGORAND_DATA"; then
-        log_info "Fast catchup restore process has started and is running."
+        log_info "Fast catchup restore process has finished successfully."
     else
         exit_with_error "Fast catchup failed to start."
     fi
@@ -163,29 +162,32 @@ monitor_logs() {
 main() {
     ensure_data_dir
     ensure_genesis
-    ensure_config  # Ensure config.json is properly set up
-    start_node
+    ensure_config
 
-    # Start monitoring logs so we can see detailed output.
+    # Determine whether blockchain data (a folder starting with the network name) exists.
+    # Using a glob: e.g., /algod/data/mainnet* (for mainnet).
+    if compgen -G "${ALGORAND_DATA}/${NETWORK}*" > /dev/null; then
+        log_info "Blockchain data folder detected (matching ${NETWORK}*). Starting node in normal mode."
+        start_node
+    else
+        log_info "No blockchain data folder found. Initiating fast catchup..."
+        if apply_fast_catchup; then
+            log_info "Catchup process finished successfully. Starting node normally."
+            start_node
+        else
+            exit_with_error "Fast catchup failed."
+        fi
+    fi
+
     monitor_logs
 
     # Allow an initial delay for the node's status to settle
     sleep 15
-
     if is_node_synced; then
         log_info "Node is already synchronized."
     else
-        # Get the total size of the data folder in bytes
-        DATA_SIZE=$(du -sb "$ALGORAND_DATA" 2>/dev/null | awk '{print $1}')
-        log_info "Data folder size: ${DATA_SIZE} bytes."
-
-        if [ "$DATA_SIZE" -gt 1048576 ]; then
-            log_info "Data folder is larger than 1MB. Resuming existing sync process."
-            monitor_sync
-        else
-            log_info "Data folder is smaller than or equal to 1MB. Initiating fast catchup..."
-            apply_fast_catchup
-        fi
+        log_info "Node is not fully synchronized. Monitoring sync status..."
+        monitor_sync
     fi
 
     wait "$TAIL_PID"  # Keep the container running
