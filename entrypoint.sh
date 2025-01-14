@@ -175,14 +175,16 @@ main() {
     if is_node_synced; then
         log_info "Node is already synchronized."
     else
-        # If the data directory is completely empty (aside from genesis/config),
-        # perform a fast catchup; otherwise, resume syncing.
-        if [ -z "$(ls -A "$ALGORAND_DATA" 2>/dev/null)" ]; then
-            log_info "Data directory is empty. Initiating fast catchup..."
-            apply_fast_catchup
-        else
-            log_info "Resuming existing sync process."
+        # Get the total size of the data folder in bytes
+        DATA_SIZE=$(du -sb "$ALGORAND_DATA" 2>/dev/null | awk '{print $1}')
+        log_info "Data folder size: ${DATA_SIZE} bytes."
+
+        if [ "$DATA_SIZE" -gt 1048576 ]; then
+            log_info "Data folder is larger than 1MB. Resuming existing sync process."
             monitor_sync
+        else
+            log_info "Data folder is smaller than or equal to 1MB. Initiating fast catchup..."
+            apply_fast_catchup
         fi
     fi
 
