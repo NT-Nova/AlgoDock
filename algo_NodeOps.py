@@ -309,10 +309,11 @@ class NodeOperations:
         return blocks
 
     def create_participation_key(self, full_addr: Optional[str]):
-        """Creates a new participation key using the full address."""
+        """Creates a new participation key using the full address and stores it locally."""
         if not full_addr:
             console.log("[yellow][WARNING][/yellow] No account address provided.")
             return
+
         cmd = [
             "goal", "account", "addpartkey",
             "-a", full_addr,
@@ -325,10 +326,20 @@ class NodeOperations:
             console.log(f"[blue][INFO][/blue] Creating participation key for: {full_addr}")
             subprocess.run(cmd, check=True)
             console.log("[green][INFO][/green] Participation key created.")
+
+            # Refresh the participation key info from the node.
+            self._parse_partkeyinfo()
+
+            # Load the local store and update it with the participation keys.
+            store = load_local_store()
+            store["participation_keys"] = self.parted_info
+            save_local_store(store)
+
+            console.log("[green][INFO][/green] Participation keys stored in local store.")
         except subprocess.CalledProcessError as e:
             logger.exception("Failed to create participation key:")
             console.log(f"[red][ERROR][/red] {e}")
-
+        
     def remove_participation_key(self):
         """
         Removes a key by the user-provided full Parent address or Participation ID.
