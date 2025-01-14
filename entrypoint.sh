@@ -89,34 +89,40 @@ fetch_catchpoint() {
     if [ -z "$CATCHPOINT" ]; then
         exit_with_error "Catchpoint is empty. Check the network configuration."
     fi
-    log_info "Latest catchpoint: $CATCHPOINT"
+    log_info "Retrieved catchpoint key: [$CATCHPOINT]"
 }
 
 # Function to apply fast catchup
 apply_fast_catchup() {
     fetch_catchpoint
-    log_info "Applying fast catchup with catchpoint: $CATCHPOINT..."
-    goal node catchup "$CATCHPOINT" -d "$ALGORAND_DATA" || exit_with_error "Fast catchup failed"
+    log_info "Initiating fast catchup using catchpoint: [$CATCHPOINT]..."
+    # Run the catchup command and log if it starts successfully
+    if goal node catchup "$CATCHPOINT" -d "$ALGORAND_DATA"; then
+        log_info "Fast catchup restore process has started and is running."
+    else
+        exit_with_error "Fast catchup failed to start."
+    fi
 }
 
-# Function to check if the node is synchronized
+# Refined function to check if the node is synchronized
 is_node_synced() {
     local status
     status=$(goal node status -d "$ALGORAND_DATA" 2>&1) || { log_error "Unable to get node status"; return 1; }
 
-    # Attempt to extract the "Sync Time Remaining" field.
-    # Adjust the parsing if the output format differs.
+    # Using sed to strip non-digits from the lines that mention sync times.
     local sync_time_rem
-    sync_time_rem=$(echo "$status" | grep "Sync Time Remaining" | awk -F '│' '{gsub(/[^0-9]/,"",$3); print $3}')
-
+    sync_time_rem=$(echo "$status" | grep -i "Sync Time Remaining" | sed -E 's/[^0-9]+//g')
     local sync_time
-    sync_time=$(echo "$status" | grep "Sync Time:" | awk -F '│' '{gsub(/[^0-9]/,"",$2); print $2}')
+    sync_time=$(echo "$status" | grep -i "Sync Time:" | sed -E 's/[^0-9]+//g')
 
-    log_info "Parsed sync time remaining: [$sync_time_rem] and sync time: [$sync_time]."
+    log_info "Parsed sync time remaining: [${sync_time_rem}] and sync time: [${sync_time}]."
 
-    # Consider the node synced when both times are zero
-    if [[ "$sync_time_rem" == "0" && "$sync_time" == "0" ]]; then
-        return 0
+    if [ -n "$sync_time_rem" ] && [ -n "$sync_time" ]; then
+        if [[ "$sync_time_rem" == "0" && "$sync_time" == "0" ]]; then
+            return 0
+        fi
+    else
+        log_info "Warning: Could not extract sync times from node status output."
     fi
     return 1
 }
@@ -138,7 +144,7 @@ monitor_sync() {
 start_node() {
     log_info "Starting the Algorand node..."
     if goal node start -d "$ALGORAND_DATA"; then
-        log_info "Algorand node started successfully."
+        log_info "Algorand node successfully started!"
     else
         exit_with_error "Failed to start the Algorand node"
     fi
@@ -170,7 +176,7 @@ main() {
         log_info "Node is already synchronized."
     else
         # If the data directory is completely empty (aside from genesis/config),
-        # perform a fast catchup; otherwise, continue syncing.
+        # perform a fast catchup; otherwise, resume syncing.
         if [ -z "$(ls -A "$ALGORAND_DATA" 2>/dev/null)" ]; then
             log_info "Data directory is empty. Initiating fast catchup..."
             apply_fast_catchup
