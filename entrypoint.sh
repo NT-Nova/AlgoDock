@@ -166,16 +166,12 @@ main() {
     ensure_config  # Ensure config.json is properly set up
     start_node
 
-    # Start monitoring logs so we can see detailed output.
-    monitor_logs
-
-    # Allow an initial delay for the node's status to settle
-    sleep 15
-
+    sleep 5
+    
     if is_node_synced; then
         log_info "Node is already synchronized."
     else
-        DATA_SIZE=$(du -sb "$ALGORAND_DATA" 2>/dev/null | awk '{print $1}')
+        DATA_SIZE=$(du -s "$ALGORAND_DATA" 2>/dev/null | awk '{print $1}')
         log_info "Data folder size: ${DATA_SIZE} bytes."
 
         # Define the threshold for 1 GB in bytes
@@ -197,6 +193,9 @@ main() {
             fi
         fi
     fi
+
+   # Start monitoring logs so we can see detailed output.
+    monitor_logs
 
     wait "$TAIL_PID"  # Keep the container running
 }
