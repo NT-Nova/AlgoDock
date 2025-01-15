@@ -40,7 +40,7 @@ alias ano=\"python /algod/scripts/algo_NodeOps.py\"\n\
 alias akr=\"python /algod/scripts/auto_key_renewal.py\"\n\
 alias mon=\"python /algod/scripts/monitor.py\"\n\
 # Run algo_NodeOps.py on bash start\n\
-/algod/scripts/algo_NodeOps.py' >> /root/.bashrc"
+python /algod/scripts/algo_NodeOps.py' >> /root/.bashrc"
 
 # Install Python dependencies in the virtual environment
 COPY requirements.txt /algod/
