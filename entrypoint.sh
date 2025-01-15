@@ -175,17 +175,20 @@ main() {
     if is_node_synced; then
         log_info "Node is already synchronized."
     else
-        # Get the total size of the data folder in bytes
         DATA_SIZE=$(du -sb "$ALGORAND_DATA" 2>/dev/null | awk '{print $1}')
         log_info "Data folder size: ${DATA_SIZE} bytes."
 
-        # Determine whether blockchain data (a folder starting with the network name) exists.
-        # Using a glob: e.g., /algod/data/mainnet* (for mainnet).
-        if compgen -G "${ALGORAND_DATA}/${NETWORK}*" > /dev/null; then
-            log_info "Blockchain data folder detected (matching ${NETWORK}*). Starting node in normal mode."
+        # Define the threshold for 1 GB in bytes
+        ONE_GB=1073741824
+
+        # Determine whether blockchain data (a folder starting with the network name) exists,
+        # and that the data folder size is greater than 1 GB.
+        if compgen -G "${ALGORAND_DATA}/${NETWORK}*" > /dev/null && [ "${DATA_SIZE}" -gt "${ONE_GB}" ]; then
+            # Your code when both conditions are true
+            log_info "Blockchain data folder detected (matching ${NETWORK}*) and the data folder size is greater than 1 GB.(${DATA_SIZE})"
             start_node
         else
-            log_info "No blockchain data folder found. Initiating fast catchup..."
+            log_info "Initiating fast catchup..."
             if apply_fast_catchup; then
                 log_info "Catchup process finished successfully. Starting node normally."
                 start_node
