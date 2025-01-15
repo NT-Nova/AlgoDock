@@ -35,13 +35,12 @@ RUN mkdir -p /algod/logs
 RUN mkdir -p /algod/scripts
 
 COPY algo_NodeOps.py auto_key_renewal.py monitor.py /algod/scripts/
-RUN echo -e "\
-# Add aliases for scripts\n\
-alias ano='python /algod/scripts/algo_NodeOps.py'\n\
-alias akr='python /algod/scripts/auto_key_renewal.py'\n\
-alias mon='python /algod/scripts/monitor.py'\n\
+RUN bash -c "echo -e '# Add aliases for scripts\n\
+alias ano=\"python /algod/scripts/algo_NodeOps.py\"\n\
+alias akr=\"python /algod/scripts/auto_key_renewal.py\"\n\
+alias mon=\"python /algod/scripts/monitor.py\"\n\
 # Run algo_NodeOps.py on bash start\n\
-/algod/scripts/algo_NodeOps.py " >> /root/.bashrc
+/algod/scripts/algo_NodeOps.py' >> /root/.bashrc"
 
 # Install Python dependencies in the virtual environment
 COPY requirements.txt /algod/
