@@ -28,7 +28,6 @@ RUN python3 -m venv /algod/myenv && \
 
 # Enables and activate env in bash
 RUN echo "source /algod/myenv/bin/activate" > /root/.bashrc
-RUN algokit completions install
 
 # Set up directories and copy scripts
 WORKDIR /algod
