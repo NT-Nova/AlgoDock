@@ -57,7 +57,6 @@ ensure_config() {
         ["FallbackDNSResolverAddress"]="8.8.8.8"
         ["EndpointAddress"]="0.0.0.0:4001"
         ["NetAddress"]="0.0.0.0:4002"
-        ["MaxCatchpointDownloadDuration"]=7200
         ["MaxConnections"]=64
     )
 
