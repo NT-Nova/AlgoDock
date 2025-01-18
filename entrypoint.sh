@@ -52,7 +52,6 @@ ensure_config() {
     RECOMMENDED_CONFIG=$(cat <<EOF
 {
     "EnableCatchup": true,
-    "PublicAddress": "0.0.0.0:4002",
     "EnableRestAPI": true,
     "DNSSecurityFlags": 9,
     "DisableAPIAuth": false,
@@ -65,7 +64,8 @@ ensure_config() {
     "EnableP2P": true,
     "EnableIncomingMessageFilter": true,
     "FallbackDNSResolverAddress": "8.8.8.8",
-    "EndpointAddress": "0.0.0.0:8080",
+    "EndpointAddress": "0.0.0.0:4001",
+    "PublicAddress": "0.0.0.0:4002"
     "EnableRelay": true,
     "MaxCatchpointDownloadDuration": 3600,
     "MaxConnections": 64
