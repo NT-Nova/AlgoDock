@@ -58,7 +58,6 @@ ensure_config() {
         ["EndpointAddress"]="0.0.0.0:4001"
         ["NetAddress"]="0.0.0.0:4002"
         ["MaxCatchpointDownloadDuration"]=7200
-        ["MaxCatchpointDownloadDuration"]=3600
         ["MaxConnections"]=64
     )
 
