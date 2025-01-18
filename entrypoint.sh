@@ -35,7 +35,6 @@ ensure_genesis() {
     fi
 }
 
-# Function to ensure config.json exists and is properly formatted
 ensure_config() {
     CONFIG_FILE="${ALGORAND_DATA}/config.json"
     log_info "Ensuring config.json exists and is properly formatted..."
@@ -53,7 +52,6 @@ ensure_config() {
     RECOMMENDED_CONFIG=$(cat <<EOF
 {
     "EnableCatchup": true,
-    "EndpointAddress": "0.0.0.0:4001",
     "PublicAddress": "0.0.0.0:4002",
     "EnableRestAPI": true,
     "DNSSecurityFlags": 9,
@@ -70,13 +68,14 @@ ensure_config() {
     "EndpointAddress": "0.0.0.0:8080",
     "EnableRelay": false,
     "MaxCatchpointDownloadDuration": 3600,
-    "MaxConnections": 64 
+    "MaxConnections": 64
 }
 EOF
 )
 
     log_info "Merging recommended settings into config.json..."
-    jq -s '.[0] * .[1]' "$CONFIG_FILE" <(echo "$RECOMMENDED_CONFIG") > "${CONFIG_FILE}.tmp" && mv "${CONFIG_FILE}.tmp" "$CONFIG_FILE"
+    jq -s '.[0] * .[1]' "$CONFIG_FILE" <(echo "$RECOMMENDED_CONFIG") \
+        > "${CONFIG_FILE}.tmp" && mv "${CONFIG_FILE}.tmp" "$CONFIG_FILE"
 
     # Validate the resulting JSON structure
     if ! jq empty "$CONFIG_FILE" >/dev/null 2>&1; then
