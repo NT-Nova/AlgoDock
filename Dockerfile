@@ -17,6 +17,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     python3.11-venv \
     curl \
     gawk \
+    net-tools \
+    vim \
+    htop \
     jq && \
     rm -rf /var/lib/apt/lists/*
 
