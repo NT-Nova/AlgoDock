@@ -124,7 +124,7 @@ apply_fast_catchup() {
     fetch_catchpoint
     log_info "Initiating fast catchup using catchpoint: [$CATCHPOINT]..."
     # Run the catchup command and log if it starts successfully
-    if goal node catchup "$CATCHPOINT" -d "$ALGORAND_DATA"; then
+    if goal node catchup "$CATCHPOINT" -d "$ALGORAND_DATA" && [ "${DATA_SIZE}" -gt "${ONE_GB}" ]; then
         log_info "Fast catchup restore process has started and is running."
     else
         exit_with_error "Fast catchup failed to start."
