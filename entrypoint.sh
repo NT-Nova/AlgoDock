@@ -64,6 +64,7 @@ ensure_config() {
         ["EnableIncomingMessageFilter"]=true
         ["FallbackDNSResolverAddress"]="8.8.8.8"
         ["EndpointAddress"]="0.0.0.0:4001"
+        ["NetAddress"]="0.0.0.0:4002"
         ["EnableRelay"]=true
         ["MaxCatchpointDownloadDuration"]=3600
         ["AnnounceParticipationKey"]=true
@@ -80,12 +81,22 @@ ensure_config() {
             current_value=$(jq -r ".${key}" "$CONFIG_FILE")
             if [ "$current_value" != "$value" ]; then
                 log_info "Updating $key from $current_value to $value..."
-                jq --arg key "$key" --argjson value "$value" '.[$key] = $value' "$CONFIG_FILE" > "${CONFIG_FILE}.tmp" && mv "${CONFIG_FILE}.tmp" "$CONFIG_FILE"
+                if [[ "$value" =~ ^[0-9]+$|^(true|false)$ ]]; then
+                    # Use --argjson for numeric/boolean values
+                    jq --arg key "$key" --argjson value "$value" '.[$key] = $value' "$CONFIG_FILE" > "${CONFIG_FILE}.tmp" && mv "${CONFIG_FILE}.tmp" "$CONFIG_FILE"
+                else
+                    # Use --arg for string values
+                    jq --arg key "$key" --arg value "$value" '.[$key] = $value' "$CONFIG_FILE" > "${CONFIG_FILE}.tmp" && mv "${CONFIG_FILE}.tmp" "$CONFIG_FILE"
+                fi
             fi
         else
             # Add the key-value pair if it doesn't exist
             log_info "Adding $key with value $value..."
-            jq --arg key "$key" --argjson value "$value" '.[$key] = $value' "$CONFIG_FILE" > "${CONFIG_FILE}.tmp" && mv "${CONFIG_FILE}.tmp" "$CONFIG_FILE"
+            if [[ "$value" =~ ^[0-9]+$|^(true|false)$ ]]; then
+                jq --arg key "$key" --argjson value "$value" '.[$key] = $value' "$CONFIG_FILE" > "${CONFIG_FILE}.tmp" && mv "${CONFIG_FILE}.tmp" "$CONFIG_FILE"
+            else
+                jq --arg key "$key" --arg value "$value" '.[$key] = $value' "$CONFIG_FILE" > "${CONFIG_FILE}.tmp" && mv "${CONFIG_FILE}.tmp" "$CONFIG_FILE"
+            fi
         fi
     done
 
