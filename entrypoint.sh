@@ -65,7 +65,10 @@ ensure_config() {
     "EnableAgreementReporting": true,
     "EnableP2P": true,
     "EnableIncomingMessageFilter": true,
-    "FallbackDNSResolverAddress": "8.8.8.8"
+    "FallbackDNSResolverAddress": "8.8.8.8",
+    "EnableRelay": false,
+    "MaxCatchpointDownloadDuration": 3600,
+    "MaxConnections": 64 
 }
 EOF
 )
@@ -167,7 +170,7 @@ main() {
     start_node
 
     sleep 5
-    
+
     if is_node_synced; then
         log_info "Node is already synchronized."
     else

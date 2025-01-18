@@ -34,9 +34,22 @@ class Config:
         ALGOD_TOKEN = "your_algod_token_here"
 
     # Participation key config
-    PARTKEY_FIRST_ROUND = 1
-    PARTKEY_LAST_ROUND = 3_000_000
-    KEY_DILUTION = 1_732
+    def get_partkey_rounds():
+        cmd = ["goal", "node", "lastround"]
+        try:
+            result = subprocess.run(cmd, capture_output=True, text=True, check=True)
+            last_round = int(result.stdout.strip())
+            return last_round + 300, last_round + 5300
+        except subprocess.CalledProcessError as e:
+            console.log(f"[red][ERROR][/red] lastround error: {e.stderr}")
+        except Exception as e:
+            logger.exception("Failed to run lastround:")
+            console.log(f"[red][ERROR][/red] {e}")
+        return 0, 0
+
+    PARTKEY_FIRST_ROUND, PARTKEY_LAST_ROUND = get_partkey_rounds()
+
+    KEY_DILUTION = 1_000
 
     # Node log path
     NODE_LOG_PATH = os.path.join(NODE_DIR, "node.log")
