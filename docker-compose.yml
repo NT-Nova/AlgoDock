@@ -55,6 +55,8 @@ volumes:
     driver: local
   algorand-logs:
     driver: local
+  grafana-data:
+    driver: local
 
 secrets:
   ACCOUNT_MNEMONIC:
