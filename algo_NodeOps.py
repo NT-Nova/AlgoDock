@@ -684,57 +684,118 @@ def wallet_submenu(node_ops: NodeOperations):
         else:
             console.log("[red][ERROR][/red] Invalid choice. Please try again.")
 
+def node_operations_submenu(node_ops: NodeOperations):
+    """
+    Node Operations Submenu: Handles node-related operations.
+    """
+    while True:
+        console.print("\n[bold magenta]Node Operations[/bold magenta]")
+        console.print("1. Check Node Sync Status")
+        console.print("2. Count Proposed Blocks")
+        console.print("3. Return to Main Menu")
+
+        choice = Prompt.ask("Choose an option", choices=["1", "2", "3"], default="3")
+
+        if choice == "1":
+            node_ops.display_sync_status()
+
+        elif choice == "2":
+            node_ops.count_proposed_blocks()
+
+        elif choice == "3":
+            console.log("[green][INFO][/green] Returning to Main Menu...")
+            break
+
+        else:
+            console.log("[red][ERROR][/red] Invalid choice. Please try again.")
+            
+def display_information_submenu(node_ops: NodeOperations):
+    """
+    Display Information Submenu: Displays wallet and account information.
+    """
+    while True:
+        console.print("\n[bold cyan]Display Information[/bold cyan]")
+        console.print("1. Display Account Info")
+        console.print("2. Display Merged Detailed PartKeys")
+        console.print("3. Return to Main Menu")
+
+        choice = Prompt.ask("Choose an option", choices=["1", "2", "3"], default="3")
+
+        if choice == "1":
+            account_address = get_default_account()
+            WalletOperations.display_account_info(node_ops.get_algod_client(), account_address)
+
+        elif choice == "2":
+            node_ops.merge_partkeys_and_show()
+
+        elif choice == "3":
+            console.log("[green][INFO][/green] Returning to Main Menu...")
+            break
+
+        else:
+            console.log("[red][ERROR][/red] Invalid choice. Please try again.")
+            
+
 def participation_key_submenu(node_ops: NodeOperations):
     """
-    Participation Key Submenu: Handles creating, removing, and using participation keys.
+    Participation Key Submenu: Handles creating, removing, and managing participation keys.
     """
     while True:
         console.print("\n[bold cyan]Participation Keys[/bold cyan]")
-        console.print("1. Use Existing Account (Full Address)")
-        console.print("2. Generate Participation Key")
-        console.print("3. Remove Participation Key")
-        console.print("4. Return to Main Menu")
+        console.print("1. Display Merged Detailed PartKeys")
+        console.print("2. Show Detailed PartKey Info")
+        console.print("3. List Participation Keys")
+        console.print("4. Use Existing Account (Full Address)")
+        console.print("5. Generate Participation Key")
+        console.print("6. Remove Participation Key")
+        console.print("7. Return to Main Menu")
 
-        choice = Prompt.ask("Choose an option", choices=["1", "2", "3", "4"], default="4")
+        choice = Prompt.ask("Choose an option", choices=["1", "2", "3", "4", "5", "6", "7"], default="7")
 
         if choice == "1":
-            WalletOperations.use_existing_account()
+            node_ops.merge_partkeys_and_show()
 
         elif choice == "2":
+            node_ops.show_partkey_info_menu()
+
+        elif choice == "3":
+            cmd = ["goal", "account", "listpartkeys", "-d", node_ops.config.NODE_DIR]
+            run_goal_command(cmd)
+
+        elif choice == "4":
+            WalletOperations.use_existing_account()
+
+        elif choice == "5":
             account_address = get_default_account()
             if not account_address:
                 console.log("[red][ERROR][/red] No default account set.")
             else:
                 node_ops.create_participation_key(account_address)
 
-        elif choice == "3":
+        elif choice == "6":
             node_ops.remove_participation_key()
 
-        elif choice == "4":
+        elif choice == "7":
             console.log("[green][INFO][/green] Returning to Main Menu...")
             break
 
         else:
             console.log("[red][ERROR][/red] Invalid choice. Please try again.")
 
-
 def main_menu(node_ops: NodeOperations):
     """
-    Main Menu. We always use the full address for default accounts.
+    Main Menu: Groups functionalities into logical sections for better organization.
     """
     while True:
         console.print("\n[bold blue]Main Menu[/bold blue]")
-        console.print("1. Wallet")
-        console.print("2. Participation Keys")
-        console.print("3. Check Node Sync Status")
-        console.print("4. Display Account Info")
-        console.print("5. Display Merged Detailed PartKeys")
-        console.print("6. Count Proposed Blocks")
-        console.print("7. Show Detailed PartKey Info")
-        console.print("8. Extended Commands Menu")
-        console.print("9. Exit")
+        console.print("1. Wallet Management")
+        console.print("2. Participation Keys Management")
+        console.print("3. Node Operations")
+        console.print("4. Display Information")
+        console.print("5. Extended Commands Menu")
+        console.print("6. Exit")
 
-        choice = Prompt.ask("Choose an option", choices=[str(i) for i in range(1, 10)], default="9")
+        choice = Prompt.ask("Choose an option", choices=[str(i) for i in range(1, 7)], default="6")
 
         if choice == "1":
             wallet_submenu(node_ops)
@@ -743,31 +804,20 @@ def main_menu(node_ops: NodeOperations):
             participation_key_submenu(node_ops)
 
         elif choice == "3":
-            node_ops.display_sync_status()
+            node_operations_submenu(node_ops)
 
         elif choice == "4":
-            account_address = get_default_account()
-            WalletOperations.display_account_info(node_ops.get_algod_client(), account_address)
+            display_information_submenu(node_ops)
 
         elif choice == "5":
-            node_ops.merge_partkeys_and_show()
-
-        elif choice == "6":
-            node_ops.count_proposed_blocks()
-
-        elif choice == "7":
-            node_ops.show_partkey_info_menu()
-
-        elif choice == "8":
             extended_commands_menu(node_ops)
 
-        elif choice == "9":
+        elif choice == "6":
             console.log("[green][INFO][/green] Exiting...")
             break
 
         else:
             console.log("[red][ERROR][/red] Invalid choice. Please try again.")
-
 
 def main():
     console.log("[blue][INFO][/blue] Initializing node metrics...")
