@@ -52,23 +52,13 @@ ensure_config() {
     declare -A RECOMMENDED_CONFIG=(
         ["EnableCatchup"]=true
         ["EnableRestAPI"]=true
-        ["DNSSecurityFlags"]=9
-        ["DisableAPIAuth"]=false
-        ["DisableLocalhostConnectionRateLimit"]=true
-        ["EnableGossipBlockService"]=true
-        ["EnableGossipService"]=true
-        ["EnableTxBacklogRateLimiting"]=true
-        ["EnableMetricReporting"]=true
-        ["EnableAgreementReporting"]=true
         ["EnableP2P"]=true
-        ["EnableIncomingMessageFilter"]=true
         ["FallbackDNSResolverAddress"]="8.8.8.8"
         ["EndpointAddress"]="0.0.0.0:4001"
         ["NetAddress"]="0.0.0.0:4002"
-        ["EnableRelay"]=false
-        ["MaxCatchpointDownloadDuration"]=3600
+        ["MaxCatchpointDownloadDuration"]=7200
         ["AnnounceParticipationKey"]=true
-        ["MaxConnections"]=64
+        ["MaxConnections"]=128
     )
 
     log_info "Updating config.json with recommended settings..."
