@@ -49,34 +49,45 @@ ensure_config() {
     fi
 
     # Recommended configuration changes
-    RECOMMENDED_CONFIG=$(cat <<EOF
-{
-    "EnableCatchup": true,
-    "EnableRestAPI": true,
-    "DNSSecurityFlags": 9,
-    "DisableAPIAuth": false,
-    "DisableLocalhostConnectionRateLimit": true,
-    "EnableGossipBlockService": true,
-    "EnableGossipService": true,
-    "EnableTxBacklogRateLimiting": true,
-    "EnableMetricReporting": true,
-    "EnableAgreementReporting": false,
-    "EnableP2P": true,
-    "EnableIncomingMessageFilter": true,
-    "FallbackDNSResolverAddress": "8.8.8.8",
-    "EndpointAddress": "0.0.0.0:4001",
-    "PublicAddress": "0.0.0.0:4002"
-    "EnableRelay": true,
-    "MaxCatchpointDownloadDuration": 3600,
-    "AnnounceParticipationKey": true,
-    "MaxConnections": 64
-}
-EOF
-)
+    declare -A RECOMMENDED_CONFIG=(
+        ["EnableCatchup"]=true
+        ["EnableRestAPI"]=true
+        ["DNSSecurityFlags"]=9
+        ["DisableAPIAuth"]=false
+        ["DisableLocalhostConnectionRateLimit"]=true
+        ["EnableGossipBlockService"]=true
+        ["EnableGossipService"]=true
+        ["EnableTxBacklogRateLimiting"]=true
+        ["EnableMetricReporting"]=true
+        ["EnableAgreementReporting"]=true
+        ["EnableP2P"]=true
+        ["EnableIncomingMessageFilter"]=true
+        ["FallbackDNSResolverAddress"]="8.8.8.8"
+        ["EndpointAddress"]="0.0.0.0:4001"
+        ["EnableRelay"]=true
+        ["MaxCatchpointDownloadDuration"]=3600
+        ["AnnounceParticipationKey"]=true
+        ["MaxConnections"]=64
+    )
 
-    log_info "Merging recommended settings into config.json..."
-    jq -s '.[0] * .[1]' "$CONFIG_FILE" <(echo "$RECOMMENDED_CONFIG") \
-        > "${CONFIG_FILE}.tmp" && mv "${CONFIG_FILE}.tmp" "$CONFIG_FILE"
+    log_info "Updating config.json with recommended settings..."
+    for key in "${!RECOMMENDED_CONFIG[@]}"; do
+        value=${RECOMMENDED_CONFIG[$key]}
+
+        # Check if the key exists in config.json
+        if jq -e ".${key}" "$CONFIG_FILE" >/dev/null 2>&1; then
+            # If the value differs, update it
+            current_value=$(jq -r ".${key}" "$CONFIG_FILE")
+            if [ "$current_value" != "$value" ]; then
+                log_info "Updating $key from $current_value to $value..."
+                jq --arg key "$key" --argjson value "$value" '.[$key] = $value' "$CONFIG_FILE" > "${CONFIG_FILE}.tmp" && mv "${CONFIG_FILE}.tmp" "$CONFIG_FILE"
+            fi
+        else
+            # Add the key-value pair if it doesn't exist
+            log_info "Adding $key with value $value..."
+            jq --arg key "$key" --argjson value "$value" '.[$key] = $value' "$CONFIG_FILE" > "${CONFIG_FILE}.tmp" && mv "${CONFIG_FILE}.tmp" "$CONFIG_FILE"
+        fi
+    done
 
     # Validate the resulting JSON structure
     if ! jq empty "$CONFIG_FILE" >/dev/null 2>&1; then
@@ -84,7 +95,7 @@ EOF
         exit 1
     fi
 
-    log_info "Config.json configured successfully and validated."
+    log_info "Config.json updated successfully and validated."
 }
 
 # Function to fetch the latest catchpoint
