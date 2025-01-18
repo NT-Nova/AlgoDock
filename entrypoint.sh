@@ -61,12 +61,12 @@ ensure_config() {
     "EnableGossipService": true,
     "EnableTxBacklogRateLimiting": true,
     "EnableMetricReporting": true,
-    "EnableAgreementReporting": true,
+    "EnableAgreementReporting": false,
     "EnableP2P": true,
     "EnableIncomingMessageFilter": true,
     "FallbackDNSResolverAddress": "8.8.8.8",
     "EndpointAddress": "0.0.0.0:8080",
-    "EnableRelay": false,
+    "EnableRelay": true,
     "MaxCatchpointDownloadDuration": 3600,
     "MaxConnections": 64
 }
