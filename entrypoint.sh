@@ -53,7 +53,6 @@ ensure_config() {
         ["EnableCatchup"]=true
         ["EnableRestAPI"]=true
         ["EnableP2P"]=true
-        ["EnableIncomingMessageFilter"]=true
         ["FallbackDNSResolverAddress"]="8.8.8.8"
         ["EndpointAddress"]="0.0.0.0:4001"
         ["NetAddress"]="0.0.0.0:4002"
