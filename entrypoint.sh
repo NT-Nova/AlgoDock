@@ -52,7 +52,6 @@ ensure_config() {
     declare -A RECOMMENDED_CONFIG=(
         ["EnableCatchup"]=true
         ["EnableRestAPI"]=true
-        ["EnableP2P"]=true
         ["MaxConnections"]=128
     )
 
