@@ -39,7 +39,7 @@ class Config:
         try:
             result = subprocess.run(cmd, capture_output=True, text=True, check=True)
             last_round = int(result.stdout.strip())
-            return last_round + 10, last_round + 3000000
+            return last_round + 10, last_round + 30000000
         except subprocess.CalledProcessError as e:
             console.log(f"[red][ERROR][/red] lastround error: {e.stderr}")
         except Exception as e:
@@ -204,7 +204,10 @@ class NodeOperations:
             return
 
         for pid, fields in self.parted_info.items():
-            t = Table(title=f"Detailed PartKey Info for Participation ID: {pid}")
+            t = Table(
+                title=f"Detailed PartKey Info for Participation ID: {pid}",
+                box=None  # This removes the border lines from the table
+            )
             t.add_column("Field", justify="left")
             t.add_column("Value", justify="left")
             for k in sorted(fields.keys()):
