@@ -68,6 +68,7 @@ ensure_config() {
     "PublicAddress": "0.0.0.0:4002"
     "EnableRelay": true,
     "MaxCatchpointDownloadDuration": 3600,
+    "AnnounceParticipationKey": true,
     "MaxConnections": 64
 }
 EOF
