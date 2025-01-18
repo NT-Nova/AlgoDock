@@ -39,7 +39,7 @@ class Config:
         try:
             result = subprocess.run(cmd, capture_output=True, text=True, check=True)
             last_round = int(result.stdout.strip())
-            return last_round + 300, last_round + 5300
+            return last_round + 10, last_round + 3000000
         except subprocess.CalledProcessError as e:
             console.log(f"[red][ERROR][/red] lastround error: {e.stderr}")
         except Exception as e:
