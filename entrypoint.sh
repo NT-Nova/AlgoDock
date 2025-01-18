@@ -65,7 +65,7 @@ ensure_config() {
         ["FallbackDNSResolverAddress"]="8.8.8.8"
         ["EndpointAddress"]="0.0.0.0:4001"
         ["NetAddress"]="0.0.0.0:4002"
-        ["EnableRelay"]=true
+        ["EnableRelay"]=false
         ["MaxCatchpointDownloadDuration"]=3600
         ["AnnounceParticipationKey"]=true
         ["MaxConnections"]=64
