@@ -39,7 +39,7 @@ class Config:
         try:
             result = subprocess.run(cmd, capture_output=True, text=True, check=True)
             last_round = int(result.stdout.strip())
-            return last_round + 10, last_round + 30000000
+            return last_round + 10, last_round + 3000000
         except subprocess.CalledProcessError as e:
             console.log(f"[red][ERROR][/red] lastround error: {e.stderr}")
         except Exception as e:
@@ -49,7 +49,7 @@ class Config:
 
     PARTKEY_FIRST_ROUND, PARTKEY_LAST_ROUND = get_partkey_rounds()
 
-    KEY_DILUTION = 1_000
+    KEY_DILUTION = 100
 
     # Node log path
     NODE_LOG_PATH = os.path.join(NODE_DIR, "node.log")
