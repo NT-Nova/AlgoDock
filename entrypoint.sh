@@ -17,13 +17,13 @@ log_error() { echo "[ERROR] $*" >&2; }
 exit_with_error() { log_error "$*"; exit 1; }
 
 # Ensure `/opt/func/` and run `FUNC` in the background
-start_func_service() {
-    log_info "Navigating to /opt/func/..."
-    cd /opt/func/ || exit_with_error "Failed to navigate to /opt/func/"
+# start_func_service() {
+#     log_info "Navigating to /opt/func/..."
+#     cd /opt/func/ || exit_with_error "Failed to navigate to /opt/func/"
 
-    log_info "Starting FUNC service in the background..."
-    ./FUNC &
-}
+#     log_info "Starting FUNC service in the background..."
+#     ./FUNC &
+# }
 
 # Function to ensure the data directory exists
 ensure_data_dir() {
