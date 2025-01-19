@@ -39,10 +39,10 @@ WORKDIR /algod
 RUN mkdir -p /algod/logs
 RUN mkdir -p /algod/scripts
 
-# FUNC Installation
-RUN curl -L -o func_3.2.2_linux-amd64.deb https://github.com/GalaxyPay/func/releases/download/v3.2.2/func_3.2.2_linux-amd64.deb && \
-dpkg -i func_3.2.2_linux-amd64.deb || apt-get install -f -y && \
-rm -f func_3.2.2_linux-amd64.deb
+# # FUNC Installation
+# RUN curl -L -o func_3.2.2_linux-amd64.deb https://github.com/GalaxyPay/func/releases/download/v3.2.2/func_3.2.2_linux-amd64.deb && \
+# dpkg -i func_3.2.2_linux-amd64.deb || apt-get install -f -y && \
+# rm -f func_3.2.2_linux-amd64.deb
 
 COPY algo_NodeOps.py auto_key_renewal.py monitor.py /algod/scripts/
 RUN bash -c "echo -e '# Add aliases for scripts\n\
