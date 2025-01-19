@@ -22,7 +22,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     htop \
     libicu-dev \
     jq && \
-    && apt-get clean &&\
+    apt-get clean &&\
     rm -rf /var/lib/apt/lists/*
 
 # Set up and activate a Python virtual environment for pipx and algokit
