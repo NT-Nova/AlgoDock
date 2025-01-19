@@ -22,7 +22,7 @@ class Config:
     Configuration values for environment and node operation.
     """
     NODE_DIR = os.getenv("NODE_DIR", "/algod/data")
-    ALGOD_ADDRESS = os.getenv("ALGOD_ADDRESS", "http://localhost:4160")
+    ALGOD_ADDRESS = os.getenv("ALGOD_ADDRESS", "http://localhost:8080")
     ALGOD_TOKEN_PATH = os.getenv("ALGOD_TOKEN_PATH", f"{NODE_DIR}/algod.token")
     ALGOD_TOKEN = os.getenv("ALGOD_TOKEN", None)
 
