@@ -64,7 +64,7 @@ ensure_config() {
         ["FallbackDNSResolverAddress"]="8.8.8.8"
         ["EndpointAddress"]=":8080"
         ["PublicAddress"]="152.53.86.170:4160"
-        ["NetAddress"]=":4160"
+        ["NetAddress"]="152.53.86.170:4160"
         ["EnableRelay"]=false
         ["AnnounceParticipationKey"]=true
         ["MaxConnections"]=64
