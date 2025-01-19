@@ -1,4 +1,3 @@
-
 services:
   algorand-node:
     build: .
@@ -9,7 +8,7 @@ services:
       - "4190:8080"  # Algorand Node API
       - "4160:4160"  # Algorand Node Client (Goal)
       - "4161:4161"  # Algorand Peer Communication
-      - "4191:7833"
+      - "4191:7833"  # Algorand Node Telemetry
     volumes:
       - ./data:/algod/data       # Persistent data directory for Algorand
       - algorand-logs:/algod/logs       # Persistent log directory for logs
@@ -49,6 +48,31 @@ services:
     environment:
       - GF_SECURITY_ADMIN_USER=admin
       - GF_SECURITY_ADMIN_PASSWORD=admin
+    networks:
+      - algorand-network
+
+  Wireguard:
+    image: linuxserver/wireguard:latest
+    container_name: Wireguard
+    hostname: WireguardG
+    entrypoint: ["/init"]
+    ports:
+      - "51820:51820/udp"
+    volumes:
+      - "$HOME/DATA/Wireguard/config:/config"
+    environment:
+      - "PGID=1000"
+      - "SERVERPORT=51820"
+      - "INTERNAL_SUBNET=172.3.0.0/24"
+      - "PEERS=10"
+      - "PEERDNS=1.1.1.1"
+      - "TZ=Europe/Rome"
+      - "PUID=1000"
+      - "PATH=/lsiopy/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+      - "HOME=/root"
+      - "TERM=xterm"
+      - "VIRTUAL_ENV=/lsiopy"
+      - "LSIO_FIRST_PARTY=true"
     networks:
       - algorand-network
 
