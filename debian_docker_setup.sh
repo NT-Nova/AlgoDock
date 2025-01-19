@@ -255,6 +255,10 @@ ufw allow ${SSH_NEW_PORT}/tcp >> "$LOG_FILE" 2>&1 || true
 ufw allow 60000:61000/udp >> "$LOG_FILE" 2>&1 || true
 ufw allow 51820/udp >> "$LOG_FILE" 2>&1 || true
 
+# Allow Algorand Node Ports
+ufw allow 4160/tcp >> "$LOG_FILE" 2>&1 || true
+ufw allow 4161/tcp >> "$LOG_FILE" 2>&1 || true
+
 ufw --force enable >> "$LOG_FILE" 2>&1 || true
 
 log_info "Enabling fail2ban service..."
