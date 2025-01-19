@@ -60,7 +60,7 @@ RUN if [ ! -f "${ALGORAND_DATA}/genesis.json" ]; then \
     fi
 
 # Expose necessary ports
-EXPOSE 8080 4001 4002
+EXPOSE 8080 4160 4161
 
 # Set up volume for logs
 VOLUME ["/algod/logs"]
