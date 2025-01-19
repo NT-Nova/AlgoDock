@@ -233,8 +233,8 @@ main() {
    # Start monitoring logs so we can see detailed output.
     monitor_logs
 
-    # Start FUNC service
-    start_func_service
+    # # Start FUNC service
+    # start_func_service
     
     wait "$TAIL_PID"  # Keep the container running
 }
