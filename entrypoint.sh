@@ -77,6 +77,7 @@ ensure_config() {
         ["EnableRelay"]=false
         ["AnnounceParticipationKey"]=true
         ["MaxConnections"]=64
+        ["EnableTelemetry"]=true
     )
 
     log_info "Updating config.json with recommended settings..."

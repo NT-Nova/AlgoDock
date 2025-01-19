@@ -108,7 +108,7 @@ apt-get upgrade -y >> "$LOG_FILE" 2>&1
 
 log_info "Installing required tools and security packages..."
 DEBIAN_FRONTEND=noninteractive apt-get install -y \
-  ca-certificates curl gnupg lsb-release apt-transport-https \
+  ca-certificates curl gnupg lsb-release apt-transport-https wireguard linux-headers-$(uname -r) \
   software-properties-common ufw fail2ban apparmor apparmor-utils mosh whiptail git vim python3-pip pipx >> "$LOG_FILE" 2>&1
 
 ###############################################################################
