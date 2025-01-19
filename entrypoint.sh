@@ -16,6 +16,15 @@ log_info() { echo "[INFO] $*"; }
 log_error() { echo "[ERROR] $*" >&2; }
 exit_with_error() { log_error "$*"; exit 1; }
 
+# Ensure `/opt/func/` and run `FUNC` in the background
+start_func_service() {
+    log_info "Navigating to /opt/func/..."
+    cd /opt/func/ || exit_with_error "Failed to navigate to /opt/func/"
+
+    log_info "Starting FUNC service in the background..."
+    ./FUNC &
+}
+
 # Function to ensure the data directory exists
 ensure_data_dir() {
     if [ ! -d "$ALGORAND_DATA" ]; then
@@ -223,6 +232,9 @@ main() {
    # Start monitoring logs so we can see detailed output.
     monitor_logs
 
+    # Start FUNC service
+    start_func_service
+    
     wait "$TAIL_PID"  # Keep the container running
 }
 

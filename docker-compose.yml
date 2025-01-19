@@ -6,10 +6,10 @@ services:
     container_name: algorand-node
     restart: unless-stopped
     ports:
-      - "8080:8080"  # Algorand Node API
+      - "4190:8080"  # Algorand Node API
       - "4160:4160"  # Algorand Node Client (Goal)
       - "4161:4161"  # Algorand Peer Communication
-      - "7833:7833"
+      - "4191:7833"
     volumes:
       - ./data:/algod/data       # Persistent data directory for Algorand
       - algorand-logs:/algod/logs       # Persistent log directory for logs
@@ -21,6 +21,7 @@ services:
     environment:
       ALGOD_ADDRESS: "http://0.0.0.0:8080"  # Use container-wide accessible address
       NETWORK: "mainnet"
+      TELEMETRY_NAME: "algorand-node"
     networks:
       - algorand-network
 

@@ -262,6 +262,9 @@ ufw allow 8080/tcp >> "$LOG_FILE" 2>&1 || true
 
 ufw allow 7833/tcp >> "$LOG_FILE" 2>&1 || true
 
+ufw allow 4190/tcp >> "$LOG_FILE" 2>&1 || true
+ufw allow 4191/tcp >> "$LOG_FILE" 2>&1 || true
+
 ufw --force enable >> "$LOG_FILE" 2>&1 || true
 
 log_info "Enabling fail2ban service..."

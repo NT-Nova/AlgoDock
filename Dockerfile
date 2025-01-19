@@ -20,7 +20,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     net-tools \
     vim \
     htop \
+    libicu-dev \
     jq && \
+    && apt-get clean &&\
     rm -rf /var/lib/apt/lists/*
 
 # Set up and activate a Python virtual environment for pipx and algokit
@@ -36,6 +38,11 @@ RUN echo "source /algod/myenv/bin/activate" > /root/.bashrc
 WORKDIR /algod
 RUN mkdir -p /algod/logs
 RUN mkdir -p /algod/scripts
+
+# FUNC Installation
+RUN curl -L -o func_3.2.2_linux-amd64.deb https://github.com/GalaxyPay/func/releases/download/v3.2.2/func_3.2.2_linux-amd64.deb && \
+dpkg -i func_3.2.2_linux-amd64.deb || apt-get install -f -y && \
+rm -f func_3.2.2_linux-amd64.deb
 
 COPY algo_NodeOps.py auto_key_renewal.py monitor.py /algod/scripts/
 RUN bash -c "echo -e '# Add aliases for scripts\n\
@@ -60,7 +67,7 @@ RUN if [ ! -f "${ALGORAND_DATA}/genesis.json" ]; then \
     fi
 
 # Expose necessary ports
-EXPOSE 8080 4160 4161 7833
+EXPOSE 8080 4160 4161 7833 9100
 
 # Set up volume for logs
 VOLUME ["/algod/logs"]
