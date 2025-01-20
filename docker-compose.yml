@@ -21,6 +21,7 @@ services:
       ALGOD_ADDRESS: "http://0.0.0.0:8080"  # Use container-wide accessible address
       NETWORK: "mainnet"
       TELEMETRY_NAME: "algorand-node"
+      FAST_CATCHUP: 1
     networks:
       - algorand-network
 

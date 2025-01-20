@@ -60,9 +60,9 @@ ensure_config() {
     # Recommended configuration changes
     declare -A RECOMMENDED_CONFIG=(
         ["EnableCatchup"]=true
-        ["EnableP2P"]=false
-        ["FallbackDNSResolverAddress"]="8.8.8.8"
+        ["EnableRestAPI"]=true
         ["EnableRelay"]=false
+        ["AnnounceParticipationKey"]=true
         ["MaxConnections"]=64
         ["EnableTelemetry"]=true
     )
