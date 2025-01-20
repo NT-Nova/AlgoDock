@@ -189,7 +189,7 @@ main() {
     ensure_config  # Ensure config.json is properly set up
     start_node
 
-    sleep 15
+    sleep 5
 
     if is_node_synced; then
         log_info "Node is already synchronized."
