@@ -200,8 +200,8 @@ main() {
         # Define the threshold for 1 GB in bytes
         ONE_GB=1073741824
 
-        Determine whether blockchain data (a folder starting with the network name) exists,
-        and that the data folder size is greater than 1 GB.
+        # Determine whether blockchain data (a folder starting with the network name) exists,
+        # and that the data folder size is greater than 1 GB.
         if compgen -G "${ALGORAND_DATA}/${NETWORK}*" > /dev/null && [ "${DATA_SIZE}" -gt "${ONE_GB}" ]; then
             # Your code when both conditions are true
             log_info "Blockchain data folder detected (matching ${NETWORK}*) and the data folder size is greater than 1 GB.(${DATA_SIZE})"
