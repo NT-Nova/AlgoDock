@@ -202,19 +202,19 @@ main() {
 
         # Determine whether blockchain data (a folder starting with the network name) exists,
         # and that the data folder size is greater than 1 GB.
-        if compgen -G "${ALGORAND_DATA}/${NETWORK}*" > /dev/null && [ "${DATA_SIZE}" -gt "${ONE_GB}" ]; then
-            # Your code when both conditions are true
-            log_info "Blockchain data folder detected (matching ${NETWORK}*) and the data folder size is greater than 1 GB.(${DATA_SIZE})"
-            start_node
-        else
-            log_info "Initiating fast catchup..."
-            if apply_fast_catchup; then
-                log_info "Catchup process finished successfully. Starting node normally."
-                start_node
-            else
-                exit_with_error "Fast catchup failed."
-            fi
-        fi
+        # if compgen -G "${ALGORAND_DATA}/${NETWORK}*" > /dev/null && [ "${DATA_SIZE}" -gt "${ONE_GB}" ]; then
+        #     # Your code when both conditions are true
+        #     log_info "Blockchain data folder detected (matching ${NETWORK}*) and the data folder size is greater than 1 GB.(${DATA_SIZE})"
+        #     start_node
+        # else
+        #     log_info "Initiating fast catchup..."
+        #     if apply_fast_catchup; then
+        #         log_info "Catchup process finished successfully. Starting node normally."
+        #         start_node
+        #     else
+        #         exit_with_error "Fast catchup failed."
+        #     fi
+        # fi
     fi
 
    # Start monitoring logs so we can see detailed output.
