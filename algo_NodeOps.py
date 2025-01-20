@@ -687,6 +687,26 @@ def wallet_submenu(node_ops: NodeOperations):
         else:
             console.log("[red][ERROR][/red] Invalid choice. Please try again.")
 
+def grep_vote_broadcast():
+    """
+    Searches for 'VoteBroadcast' in node.log and prints matching lines.
+    """
+    node_log_path = os.getenv("ALGORAND_DATA", "/algod/data") + "/node.log"
+
+    if not os.path.exists(node_log_path):
+        console.log("[red][ERROR][/red] Node log file not found.")
+        return
+
+    try:
+        console.log("[blue][INFO][/blue] Searching for 'VoteBroadcast' in node.log...")
+        with open(node_log_path, "r", encoding="utf-8", errors="replace") as log_file:
+            for line in log_file:
+                if "VoteBroadcast" in line:
+                    console.print(line.strip(), highlight=True)
+    except Exception as e:
+        logger.exception("Error reading node.log:")
+        console.log(f"[red][ERROR][/red] {e}")
+
 def node_operations_submenu(node_ops: NodeOperations):
     """
     Node Operations Submenu: Handles node-related operations.
@@ -695,9 +715,10 @@ def node_operations_submenu(node_ops: NodeOperations):
         console.print("\n[bold magenta]Node Operations[/bold magenta]")
         console.print("1. Check Node Sync Status")
         console.print("2. Count Proposed Blocks")
-        console.print("3. Return to Main Menu")
+        console.print("3. Search 'VoteBroadcast' in node.log")
+        console.print("4. Return to Main Menu")
 
-        choice = Prompt.ask("Choose an option", choices=["1", "2", "3"], default="3")
+        choice = Prompt.ask("Choose an option", choices=["1", "2", "3", "4"], default="4")
 
         if choice == "1":
             node_ops.display_sync_status()
@@ -706,12 +727,15 @@ def node_operations_submenu(node_ops: NodeOperations):
             node_ops.count_proposed_blocks()
 
         elif choice == "3":
+            grep_vote_broadcast()
+
+        elif choice == "4":
             console.log("[green][INFO][/green] Returning to Main Menu...")
             break
 
         else:
             console.log("[red][ERROR][/red] Invalid choice. Please try again.")
-            
+
 def display_information_submenu(node_ops: NodeOperations):
     """
     Display Information Submenu: Displays wallet and account information.

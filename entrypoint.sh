@@ -105,27 +105,27 @@ ensure_config() {
     log_info "Config.json updated successfully and validated."
 }
 
-# Function to fetch the latest catchpoint
-fetch_catchpoint() {
-    log_info "Fetching the latest catchpoint for $NETWORK..."
-    CATCHPOINT=$(curl -s "$CATCHPOINT_URL" | tr -d '\n') || exit_with_error "Failed to fetch catchpoint"
-    if [ -z "$CATCHPOINT" ]; then
-        exit_with_error "Catchpoint is empty. Check the network configuration."
-    fi
-    log_info "Retrieved catchpoint key: [$CATCHPOINT]"
-}
+# # Function to fetch the latest catchpoint
+# fetch_catchpoint() {
+#     log_info "Fetching the latest catchpoint for $NETWORK..."
+#     CATCHPOINT=$(curl -s "$CATCHPOINT_URL" | tr -d '\n') || exit_with_error "Failed to fetch catchpoint"
+#     if [ -z "$CATCHPOINT" ]; then
+#         exit_with_error "Catchpoint is empty. Check the network configuration."
+#     fi
+#     log_info "Retrieved catchpoint key: [$CATCHPOINT]"
+# }
 
-# Function to apply fast catchup
-apply_fast_catchup() {
-    fetch_catchpoint
-    log_info "Initiating fast catchup using catchpoint: [$CATCHPOINT]..."
-    # Run the catchup command and log if it starts successfully
-    if goal node catchup "$CATCHPOINT" -d "$ALGORAND_DATA"; then
-        log_info "Fast catchup restore process has started and is running."
-    else
-        exit_with_error "Fast catchup failed to start."
-    fi
-}
+# # Function to apply fast catchup
+# apply_fast_catchup() {
+#     fetch_catchpoint
+#     log_info "Initiating fast catchup using catchpoint: [$CATCHPOINT]..."
+#     # Run the catchup command and log if it starts successfully
+#     if goal node catchup "$CATCHPOINT" -d "$ALGORAND_DATA"; then
+#         log_info "Fast catchup restore process has started and is running."
+#     else
+#         exit_with_error "Fast catchup failed to start."
+#     fi
+# }
 
 # Refined function to check if the node is synchronized
 is_node_synced() {
