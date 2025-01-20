@@ -105,27 +105,27 @@ ensure_config() {
     log_info "Config.json updated successfully and validated."
 }
 
-# # Function to fetch the latest catchpoint
-# fetch_catchpoint() {
-#     log_info "Fetching the latest catchpoint for $NETWORK..."
-#     CATCHPOINT=$(curl -s "$CATCHPOINT_URL" | tr -d '\n') || exit_with_error "Failed to fetch catchpoint"
-#     if [ -z "$CATCHPOINT" ]; then
-#         exit_with_error "Catchpoint is empty. Check the network configuration."
-#     fi
-#     log_info "Retrieved catchpoint key: [$CATCHPOINT]"
-# }
+# Function to fetch the latest catchpoint
+fetch_catchpoint() {
+    log_info "Fetching the latest catchpoint for $NETWORK..."
+    CATCHPOINT=$(curl -s "$CATCHPOINT_URL" | tr -d '\n') || exit_with_error "Failed to fetch catchpoint"
+    if [ -z "$CATCHPOINT" ]; then
+        exit_with_error "Catchpoint is empty. Check the network configuration."
+    fi
+    log_info "Retrieved catchpoint key: [$CATCHPOINT]"
+}
 
-# # Function to apply fast catchup
-# apply_fast_catchup() {
-#     fetch_catchpoint
-#     log_info "Initiating fast catchup using catchpoint: [$CATCHPOINT]..."
-#     # Run the catchup command and log if it starts successfully
-#     if goal node catchup "$CATCHPOINT" -d "$ALGORAND_DATA"; then
-#         log_info "Fast catchup restore process has started and is running."
-#     else
-#         exit_with_error "Fast catchup failed to start."
-#     fi
-# }
+# Function to apply fast catchup
+apply_fast_catchup() {
+    fetch_catchpoint
+    log_info "Initiating fast catchup using catchpoint: [$CATCHPOINT]..."
+    # Run the catchup command and log if it starts successfully
+    if goal node catchup "$CATCHPOINT" -d "$ALGORAND_DATA"; then
+        log_info "Fast catchup restore process has started and is running."
+    else
+        exit_with_error "Fast catchup failed to start."
+    fi
+}
 
 # Refined function to check if the node is synchronized
 is_node_synced() {
@@ -200,21 +200,21 @@ main() {
         # Define the threshold for 1 GB in bytes
         ONE_GB=1073741824
 
-        # Determine whether blockchain data (a folder starting with the network name) exists,
-        # and that the data folder size is greater than 1 GB.
-        # if compgen -G "${ALGORAND_DATA}/${NETWORK}*" > /dev/null && [ "${DATA_SIZE}" -gt "${ONE_GB}" ]; then
-        #     # Your code when both conditions are true
-        #     log_info "Blockchain data folder detected (matching ${NETWORK}*) and the data folder size is greater than 1 GB.(${DATA_SIZE})"
-        #     start_node
-        # else
-        #     log_info "Initiating fast catchup..."
-        #     if apply_fast_catchup; then
-        #         log_info "Catchup process finished successfully. Starting node normally."
-        #         start_node
-        #     else
-        #         exit_with_error "Fast catchup failed."
-        #     fi
-        # fi
+        Determine whether blockchain data (a folder starting with the network name) exists,
+        and that the data folder size is greater than 1 GB.
+        if compgen -G "${ALGORAND_DATA}/${NETWORK}*" > /dev/null && [ "${DATA_SIZE}" -gt "${ONE_GB}" ]; then
+            # Your code when both conditions are true
+            log_info "Blockchain data folder detected (matching ${NETWORK}*) and the data folder size is greater than 1 GB.(${DATA_SIZE})"
+            start_node
+        else
+            log_info "Initiating fast catchup..."
+            if apply_fast_catchup; then
+                log_info "Catchup process finished successfully. Starting node normally."
+                start_node
+            else
+                exit_with_error "Fast catchup failed."
+            fi
+        fi
     fi
 
    # Start monitoring logs so we can see detailed output.
