@@ -59,22 +59,10 @@ ensure_config() {
 
     # Recommended configuration changes
     declare -A RECOMMENDED_CONFIG=(
-        ["EnableCatchup"]=true
-        ["EnableRestAPI"]=true
-        ["DNSSecurityFlags"]=9
-        ["DisableAPIAuth"]=false
-        ["DisableLocalhostConnectionRateLimit"]=true
-        ["EnableGossipBlockService"]=true
-        ["EnableGossipService"]=true
-        ["EnableTxBacklogRateLimiting"]=true
-        ["EnableMetricReporting"]=true
-        ["EnableAgreementReporting"]=true
         ["EnableP2P"]=true
         ["FallbackDNSResolverAddress"]="8.8.8.8"
         ["EnableRelay"]=false
-        ["AnnounceParticipationKey"]=true
-        ["MaxConnections"]=64
-        ["EnableTelemetry"]=true
+        ["MaxConnections"]=128
     )
 
     log_info "Updating config.json with recommended settings..."
