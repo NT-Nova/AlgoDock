@@ -71,9 +71,6 @@ ensure_config() {
         ["EnableAgreementReporting"]=true
         ["EnableP2P"]=true
         ["FallbackDNSResolverAddress"]="8.8.8.8"
-        ["EndpointAddress"]=":8080"
-        ["PublicAddress"]="152.53.86.170:4160"
-        ["NetAddress"]="0.0.0.0:4160"
         ["EnableRelay"]=false
         ["AnnounceParticipationKey"]=true
         ["MaxConnections"]=64
