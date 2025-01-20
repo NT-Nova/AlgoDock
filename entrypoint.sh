@@ -59,10 +59,12 @@ ensure_config() {
 
     # Recommended configuration changes
     declare -A RECOMMENDED_CONFIG=(
-        ["EnableP2P"]=true
+        ["EnableCatchup"]=true
+        ["EnableP2P"]=false
         ["FallbackDNSResolverAddress"]="8.8.8.8"
         ["EnableRelay"]=false
-        ["MaxConnections"]=128
+        ["MaxConnections"]=64
+        ["EnableTelemetry"]=true
     )
 
     log_info "Updating config.json with recommended settings..."
