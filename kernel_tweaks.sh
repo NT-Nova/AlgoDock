@@ -328,8 +328,8 @@ main() {
   apply_xfs_tweaks
 
   # Optional advanced tunings (uncomment as desired)
-  # disable_transparent_hugepages
-  # apply_cpu_governor
+  disable_transparent_hugepages
+  apply_cpu_governor
 
   # Reload sysctl settings to ensure they persist
   reload_settings
