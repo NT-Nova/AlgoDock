@@ -2,6 +2,10 @@ FROM docker.elastic.co/elasticsearch/elasticsearch-wolfi:8.17.1
 
 WORKDIR /usr/share/elasticsearch/config/
 
+# Ensure root access for permission changes
+USER root
 COPY setup-es.sh /setup-es.sh
-RUN chmod +x /setup-es.sh && \
-   chown elasticsearch:elasticsearch /setup-es.sh
+RUN chmod +x /setup-es.sh && chown elasticsearch:elasticsearch /setup-es.sh
+
+# Switch back to the elasticsearch user
+USER elasticsearch
