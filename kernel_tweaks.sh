@@ -135,12 +135,25 @@ is_docker_installed() {
 apply_sysctl_param() {
   local PARAM="$1"
   local VALUE="$2"
+
   if check_sysctl_param "$PARAM"; then
-    sysctl -w "$PARAM=$VALUE"
-    success "Applied sysctl: $PARAM = $VALUE"
-    # Persist the setting
-    sed -i "/^$PARAM\s*=/d" "$SYSCTL_CONF" 2>/dev/null || true
-    echo "$PARAM = $VALUE" >> "$SYSCTL_CONF"
+    # Apply the sysctl parameter
+    sysctl -w "$PARAM=$VALUE" > /dev/null 2>&1
+
+    # Verify if the applied value matches the expected value
+    local CURRENT_VALUE
+    CURRENT_VALUE=$(sysctl -n "$PARAM" 2>/dev/null)
+
+    if [ "$CURRENT_VALUE" = "$VALUE" ]; then
+      success "Successfully applied sysctl: $PARAM = $VALUE"
+
+      # Remove any existing lines with this param (avoid duplicates),
+      # then append a single new line with the correct value.
+      sed -i "/^$PARAM\s*=.*/d" "$SYSCTL_CONF" 2>/dev/null || true
+      echo "$PARAM = $VALUE" >> "$SYSCTL_CONF"
+    else
+      error "Failed to apply sysctl: $PARAM. Expected: $VALUE, but got: $CURRENT_VALUE"
+    fi
   else
     warn "Skipped sysctl: $PARAM (parameter added for Debian compatibility)"
   fi
@@ -222,17 +235,22 @@ apply_sysctl() {
 
   # Network stack tunings
   apply_sysctl_param "net.core.netdev_max_backlog" "5000"
-  apply_sysctl_param "net.core.rmem_max" "16777216"
-  apply_sysctl_param "net.core.wmem_max" "16777216"
-  apply_sysctl_param "net.core.somaxconn" "4096"
+  apply_sysctl_param "net.ipv4.tcp_fastopen" "3"
+  apply_sysctl_param "net.ipv4.tcp_keepalive_time" "300"
+  apply_sysctl_param "net.ipv4.tcp_keepalive_intvl" "75"
+  apply_sysctl_param "net.ipv4.tcp_keepalive_probes" "9"
+  apply_sysctl_param "net.core.rmem_max" "26214400"
+  apply_sysctl_param "net.core.wmem_max" "26214400"
+  apply_sysctl_param "net.core.somaxconn" "1024"
   apply_sysctl_param "net.core.default_qdisc" "fq"
   apply_sysctl_param "net.ipv4.tcp_congestion_control" "bbr"
   apply_sysctl_param "net.ipv4.tcp_fin_timeout" "15"
   apply_sysctl_param "net.ipv4.tcp_max_syn_backlog" "8192"
-  apply_sysctl_param "net.ipv4.tcp_rmem" "4096 87380 16777216"
-  apply_sysctl_param "net.ipv4.tcp_wmem" "4096 87380 16777216"
+  apply_sysctl_param "net.ipv4.tcp_rmem" "4096 87380 26214400"
+  apply_sysctl_param "net.ipv4.tcp_wmem" "4096 87380 26214400"
   apply_sysctl_param "net.ipv4.tcp_slow_start_after_idle" "0"
   apply_sysctl_param "net.ipv4.ip_local_port_range" "1024 65535"
+  apply_sysctl_param "net.ipv4.tcp_tw_reuse" "1"
 
   # Bridge (Docker / container) settings
   apply_sysctl_param "net.bridge.bridge-nf-call-iptables" "1"
@@ -253,9 +271,26 @@ apply_sysctl() {
 
 apply_docker_tweaks() {
   if is_docker_installed; then
-    info "Docker detected. Applying Docker performance tweaks..."
-    mkdir -p /etc/docker
-    cat <<EOF | tee "$DOCKER_CONF"
+    info "Docker detected. Checking Docker performance tweaks..."
+    # Desired lines to check for in daemon.json
+    local L1='"log-driver": "json-file"'
+    local L2='"storage-driver": "overlay2"'
+    local L3='"bip": "192.168.1.1/24"'
+    local L4='"max-size": "10m"'
+    local L5='"max-file": "3"'
+
+    if [ -f "$DOCKER_CONF" ]; then
+      # Check if file already contains all relevant lines
+      if grep -q "$L1" "$DOCKER_CONF" && \
+         grep -q "$L2" "$DOCKER_CONF" && \
+         grep -q "$L3" "$DOCKER_CONF" && \
+         grep -q "$L4" "$DOCKER_CONF" && \
+         grep -q "$L5" "$DOCKER_CONF"; then
+        info "Docker performance tweaks already present. Skipping re-application."
+      else
+        info "Updating Docker configuration to include performance tweaks..."
+        cp "$DOCKER_CONF" "$DOCKER_CONF.bak.$(date +%F-%T)"
+        cat <<EOF > "$DOCKER_CONF"
 {
   "log-driver": "json-file",
   "log-opts": {
@@ -266,9 +301,28 @@ apply_docker_tweaks() {
   "bip": "192.168.1.1/24"
 }
 EOF
-    systemctl daemon-reload
-    systemctl restart docker
-    success "Docker performance tweaks applied successfully."
+        systemctl daemon-reload
+        systemctl restart docker
+        success "Docker performance tweaks updated successfully."
+      fi
+    else
+      info "No existing Docker configuration found. Creating $DOCKER_CONF with performance tweaks..."
+      mkdir -p /etc/docker
+      cat <<EOF > "$DOCKER_CONF"
+{
+  "log-driver": "json-file",
+  "log-opts": {
+    "max-size": "10m",
+    "max-file": "3"
+  },
+  "storage-driver": "overlay2",
+  "bip": "192.168.1.1/24"
+}
+EOF
+      systemctl daemon-reload
+      systemctl restart docker
+      success "Docker performance tweaks applied successfully."
+    fi
   else
     info "Docker not detected. Skipping Docker tweaks."
   fi
@@ -297,6 +351,9 @@ reload_settings() {
 main() {
   check_root
   check_command "sysctl"
+  ulimit -Sn 65535  # Set the maximum number of soft open file descriptors to 65535
+  ulimit -Hn 65535  # Set the maximum number of hard  open file descriptors to 65535
+  ulimit -Su 65535  # Set the maximum number of user processes to 65535
 
   # Parse arguments
   if [[ $# -eq 0 ]]; then
@@ -327,7 +384,7 @@ main() {
   apply_docker_tweaks
   apply_xfs_tweaks
 
-  # Optional advanced tunings (uncomment as desired)
+  # Optional advanced tunings
   disable_transparent_hugepages
   apply_cpu_governor
 
