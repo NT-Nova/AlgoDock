@@ -3,6 +3,7 @@ services:
     build: .
     image: algorand-node
     container_name: algorand-node
+    hostname: algorand-node
     restart: unless-stopped
     ports:
       # - "4190:8080"  # Algorand Node API
