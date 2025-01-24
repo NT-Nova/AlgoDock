@@ -52,6 +52,8 @@ services:
       tags:
         - "algomon/prometheus:main"
     restart: always
+    command:
+      - "--storage.tsdb.retention.time=15d"
     networks:
       - algorand-network
     # ports:

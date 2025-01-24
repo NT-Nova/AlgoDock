@@ -97,6 +97,10 @@ ensure_config() {
         ["MaxCatchupBlocks"]=100
         ["EnableOutgoingConnectionThrottling"]=true
         ["TelemetryEndpoints"]="http://algomon-elasticsearch:9200"
+        ["EnableAgreementTimeMetrics"]=true
+        ["EnableProcessBlockStats"]=true
+        ["EnableNetDevMetrics"]=true
+        ["EnableAgreementReporting"]=true
     )
 
     # ExcludeFields array

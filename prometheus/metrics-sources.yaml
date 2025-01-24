@@ -3,4 +3,4 @@
     env: mainnet
   targets:
     - algorand-node:9100
-    - algorand-node:9101
+    # - algorand-node:9101
