@@ -63,7 +63,7 @@ ensure_config() {
         ["EnableRestAPI"]=true
         ["EnableRelay"]=false
         ["MaxConnections"]=64
-        ["EnableTelemetry"]=false
+        ["EnableTelemetry"]=true
         ["LedgerSynchronousMode"]=0
         ["GossipFanout"]=10
         ["BaseLoggerDebugLevel"]=0
@@ -74,7 +74,7 @@ ensure_config() {
         ["NetAddress"]="0.0.0.0:38086"
         ["EnableP2P"]=true
         ["EnableMetricReporting"]=true
-        ["NodeExporterPath"]="/node/bin/node_exporter"
+        ["NodeExporterPath"]="/node/bin/node_exporter --web.listen-address=0.0.0.0:9100"
         ["EnableRuntimeMetrics"]=true
         ["EnableLedgerService"]=true
         ["EnableBlockService"]=true
