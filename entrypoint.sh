@@ -318,6 +318,7 @@ main() {
     ensure_es_mapping  # Ensure Elasticsearch mapping is correct
     start_node
     start_node_kmd
+    /node/bin/node_exporter --web.listen-address="0.0.0.0:9100" &
 
     sleep 5
 
