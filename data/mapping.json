@@ -1,0 +1,39 @@
+{
+    "mappings": {
+      "properties": {
+        "details": {
+          "type": "object",
+          "enabled": true
+        },
+        "Metrics": {
+          "type": "object",
+          "enabled": true
+        },
+        "file": {
+          "type": "keyword"
+        },
+        "function": {
+          "type": "keyword"
+        },
+        "instanceName": {
+          "type": "keyword"
+        },
+        "level": {
+          "type": "integer"
+        },
+        "msg": {
+          "type": "text",
+          "fields": {
+            "keyword": {
+              "type": "keyword",
+              "ignore_above": 256
+            }
+          }
+        },
+        "time": {
+          "type": "date",
+          "format": "strict_date_optional_time||epoch_millis"
+        }
+      }
+    }
+  }
