@@ -1,8 +1,13 @@
 FROM grafana/grafana:latest
 WORKDIR /etc/grafana/provisioning/
 
-RUN mkdir -p /var/lib/grafana/dashboards
-RUN mkdir -p /usr/share/grafana/public/maps
+# Temporarily switch to root for creating directories
+USER root
+RUN mkdir -p /var/lib/grafana/dashboards && \
+    mkdir -p /usr/share/grafana/public/maps
+
+# Switch back to the Grafana user
+USER grafana
 
 COPY ./datasource-manifest.yaml ./datasources/default.yaml
 COPY ./dashboard-provider.yaml ./dashboards/default.yaml
