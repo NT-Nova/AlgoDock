@@ -70,6 +70,7 @@ ensure_config() {
         ["DNSSecurityFlags"]=0
         ["Archival"]=false
         ["BaseLoggerDebugLevel"]=3
+        ["EndpointAddress"]="0.0.0.0:38086"
         ["EnableMetricReporting"]=true
         ["NodeExporterPath"]="/node/bin/node_exporter"
         ["EnableRuntimeMetrics"]=true
@@ -209,6 +210,15 @@ start_node() {
     fi
 }
 
+start_node_kmd() {
+    log_info "Starting the Algorand KMD..."
+    if goal kmd start -d "$ALGORAND_DATA"; then
+        log_info "Algorand KMD successfully started!"
+    else
+        exit_with_error "Failed to start the Algorand KMD"
+    fi
+}
+
 # Function to monitor logs
 monitor_logs() {
     log_info "Monitoring logs from $LOG_FILE..."
@@ -305,6 +315,7 @@ main() {
     ensure_config  # Ensure config.json is properly set up
     ensure_es_mapping  # Ensure Elasticsearch mapping is correct
     start_node
+    start_node_kmd
 
     sleep 5
 

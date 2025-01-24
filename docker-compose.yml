@@ -5,8 +5,9 @@ services:
     container_name: algorand-node
     restart: unless-stopped
     ports:
-      - "4190:8080"  # Algorand Node API
-      - "4191:7833"  # Algorand kmd API
+      # - "4190:8080"  # Algorand Node API
+      # - "4191:7833"  # Algorand kmd API
+      - "38086:38086" # Expose publicly for node participation
     volumes:
       - type: bind
         source: ./data
