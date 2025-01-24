@@ -72,6 +72,7 @@ ensure_config() {
         ["BaseLoggerDebugLevel"]=3
         ["EndpointAddress"]="0.0.0.0:8080"
         ["NetAddress"]="0.0.0.0:38086"
+        ["EnableP2P"]=true
         ["EnableMetricReporting"]=true
         ["NodeExporterPath"]="/node/bin/node_exporter"
         ["EnableRuntimeMetrics"]=true
