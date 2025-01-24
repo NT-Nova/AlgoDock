@@ -1,4 +1,4 @@
-FROM docker.elastic.co/elasticsearch/elasticsearch:8.17.1
+FROM docker.elastic.co/elasticsearch/elasticsearch-wolfi:8.17.1
 
 WORKDIR /usr/share/elasticsearch/config/
 
