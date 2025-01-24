@@ -63,40 +63,13 @@ ensure_config() {
         ["EnableRestAPI"]=true
         ["EnableRelay"]=false
         ["MaxConnections"]=64
-        ["EnableTelemetry"]=false
-        ["LedgerSynchronousMode"]=0
-        ["GossipFanout"]=10
-        ["BaseLoggerDebugLevel"]=0
-        ["DNSSecurityFlags"]=0
-        ["Archival"]=false
-        ["BaseLoggerDebugLevel"]=3
-        ["EndpointAddress"]="0.0.0.0:8080"
-        ["EnableMetricReporting"]=true
-        ["NodeExporterPath"]="/node/bin/node_exporter"
-        ["EnableRuntimeMetrics"]=true
-        ["EnableLedgerService"]=true
-        ["EnableBlockService"]=true
+        ["EnableTelemetry"]=true
         ["LedgerSynchronousMode"]=2
-        ["DatabaseReadOnly"]=false
-        ["SQLiteJournalMode"]="WAL"
-        ["SQLiteSynchronous"]="NORMAL"
-        ["SQLiteLockTimeout"]=20000
-        ["SQLitePageSize"]=16384
-        ["SQLiteCacheSize"]=2000000
-        ["SQLiteBusyTimeout"]=20000
-        ["DeadlockDetection"]=0
-        ["TransactionTimeoutSeconds"]=10
-        ["SQLiteTempStore"]="MEMORY"
-        ["SQLiteMmapSize"]=268435456
-        ["SQLiteDefaultTimeout"]=20000
-        ["CatchupParallelBlocks"]=8
-        ["EnableCatchupFromArchival"]=false
-        ["DisableNetworking"]=false
-        ["MaxCatchupBlocks"]=100
-        ["EnableOutgoingConnectionThrottling"]=true
         ["TelemetryEndpoints"]="http://algomon-elasticsearch:9200"
     )
-        #  ["ExcludeFields"]=["Metrics", "details"]
+
+    # ExcludeFields array
+    EXCLUDE_FIELDS=("Metrics" "details")
 
     log_info "Updating config.json with recommended settings..."
     for key in "${!RECOMMENDED_CONFIG[@]}"; do
@@ -126,6 +99,10 @@ ensure_config() {
             fi
         fi
     done
+
+    # Add or update the ExcludeFields array
+    log_info "Updating ExcludeFields..."
+    jq '.ExcludeFields = ["Metrics", "details"]' "$CONFIG_FILE" > "${CONFIG_FILE}.tmp" && mv "${CONFIG_FILE}.tmp" "$CONFIG_FILE"
 
     # Validate the resulting JSON structure
     if ! jq empty "$CONFIG_FILE" >/dev/null 2>&1; then
@@ -223,26 +200,61 @@ ensure_es_mapping() {
 
     log_info "Checking Elasticsearch mapping for index: $INDEX_NAME..."
 
+    # Check if the index exists
+    if ! curl -s -u "$ELASTIC_USER:$ELASTIC_PASSWORD" "$ELASTIC_URL/$INDEX_NAME" > /dev/null; then
+        log_error "Index $INDEX_NAME does not exist. Please create the index before applying the mapping."
+        return 1
+    fi
+
     # Fetch current mapping
     local current_mapping
-    current_mapping=$(curl -s -u "$ELASTIC_USER:$ELASTIC_PASSWORD" "$ELASTIC_URL/$INDEX_NAME/_mapping?pretty")
+    current_mapping=$(curl -s -u "$ELASTIC_USER:$ELASTIC_PASSWORD" "$ELASTIC_URL/$INDEX_NAME/_mapping")
+
+    # Check if current mapping is valid
+    if [ -z "$current_mapping" ] || ! echo "$current_mapping" | jq -e . > /dev/null 2>&1; then
+        log_error "Failed to fetch current mapping for $INDEX_NAME. Exiting."
+        return 1
+    fi
 
     # Define expected mapping for comparison (compact JSON)
     local expected_mapping
-    expected_mapping=$(jq -c . "$MAPPING_FILE")
+    if ! expected_mapping=$(jq -c . "$MAPPING_FILE" 2>/dev/null); then
+        log_error "Failed to read or parse the mapping file: $MAPPING_FILE. Exiting."
+        return 1
+    fi
 
     # Compare current mapping with expected mapping
-    if echo "$current_mapping" | jq -e . > /dev/null 2>&1 && echo "$current_mapping" | grep -q "$expected_mapping"; then
+    if echo "$current_mapping" | grep -q "$expected_mapping"; then
         log_info "Elasticsearch mapping for $INDEX_NAME is already correct."
-    else
-        log_info "Elasticsearch mapping for $INDEX_NAME is incorrect or missing. Updating mapping..."
-        curl -u "$ELASTIC_USER:$ELASTIC_PASSWORD" -X PUT "$ELASTIC_URL/$INDEX_NAME/_mapping" \
-        -H "Content-Type: application/json" -d @"$MAPPING_FILE" || {
-            log_error "Failed to update Elasticsearch mapping for $INDEX_NAME. Exiting."
-            exit 1
-        }
-        log_info "Elasticsearch mapping for $INDEX_NAME has been updated successfully."
+        return 0
     fi
+
+    log_info "Elasticsearch mapping for $INDEX_NAME is incorrect or missing. Updating mapping..."
+
+    # Close the index to apply mapping changes (if needed)
+    log_info "Closing the index $INDEX_NAME..."
+    if ! curl -s -u "$ELASTIC_USER:$ELASTIC_PASSWORD" -X POST "$ELASTIC_URL/$INDEX_NAME/_close"; then
+        log_error "Failed to close the index $INDEX_NAME. Exiting."
+        return 1
+    fi
+
+    # Apply the mapping
+    log_info "Applying the updated mapping to $INDEX_NAME..."
+    if ! curl -s -u "$ELASTIC_USER:$ELASTIC_PASSWORD" -X PUT "$ELASTIC_URL/$INDEX_NAME/_mapping" \
+        -H "Content-Type: application/json" -d @"$MAPPING_FILE"; then
+        log_error "Failed to update the mapping for $INDEX_NAME. Exiting."
+        return 1
+    fi
+
+    # Reopen the index after applying mapping
+    log_info "Reopening the index $INDEX_NAME..."
+    if ! curl -s -u "$ELASTIC_USER:$ELASTIC_PASSWORD" -X POST "$ELASTIC_URL/$INDEX_NAME/_open"; then
+        log_error "Failed to reopen the index $INDEX_NAME. Exiting."
+        return 1
+    fi
+
+    log_info "Elasticsearch mapping for $INDEX_NAME has been updated and applied successfully."
+    return 0
 }
 
 # Main process
