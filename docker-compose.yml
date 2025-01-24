@@ -7,7 +7,7 @@ services:
     ports:
       # - "4190:8080"  # Algorand Node API
       # - "4191:7833"  # Algorand kmd API
-      - "38086:38086" # Expose publicly for node participation
+      - "38086:38086" # Expose publicly for P2P node participation
     volumes:
       - type: bind
         source: ./data
