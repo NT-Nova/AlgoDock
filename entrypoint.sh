@@ -211,11 +211,44 @@ monitor_logs() {
     TAIL_PID=$!
 }
 
+# Function to ensure Elasticsearch mapping
+ensure_es_mapping() {
+    local ELASTIC_URL="http://algomon-elasticsearch:9200"
+    local INDEX_NAME="stable-mainnet-v1.0"
+    local MAPPING_FILE="data/mapping.json"  # Adjust path if needed
+    local ELASTIC_USER="elastic"
+    local ELASTIC_PASSWORD="elastic"
+
+    log_info "Checking Elasticsearch mapping for index: $INDEX_NAME..."
+
+    # Fetch current mapping
+    local current_mapping
+    current_mapping=$(curl -s -u "$ELASTIC_USER:$ELASTIC_PASSWORD" "$ELASTIC_URL/$INDEX_NAME/_mapping?pretty")
+
+    # Define expected mapping for comparison (compact JSON)
+    local expected_mapping
+    expected_mapping=$(jq -c . "$MAPPING_FILE")
+
+    # Compare current mapping with expected mapping
+    if echo "$current_mapping" | jq -e . > /dev/null 2>&1 && echo "$current_mapping" | grep -q "$expected_mapping"; then
+        log_info "Elasticsearch mapping for $INDEX_NAME is already correct."
+    else
+        log_info "Elasticsearch mapping for $INDEX_NAME is incorrect or missing. Updating mapping..."
+        curl -u "$ELASTIC_USER:$ELASTIC_PASSWORD" -X PUT "$ELASTIC_URL/$INDEX_NAME/_mapping" \
+        -H "Content-Type: application/json" -d @"$MAPPING_FILE" || {
+            log_error "Failed to update Elasticsearch mapping for $INDEX_NAME. Exiting."
+            exit 1
+        }
+        log_info "Elasticsearch mapping for $INDEX_NAME has been updated successfully."
+    fi
+}
+
 # Main process
 main() {
     ensure_data_dir
     ensure_genesis
     ensure_config  # Ensure config.json is properly set up
+    ensure_es_mapping  # Ensure Elasticsearch mapping is correct
     start_node
 
     sleep 5
