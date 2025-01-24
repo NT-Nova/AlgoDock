@@ -11,7 +11,8 @@ ARG NETWORK="mainnet"
 ARG GENESIS_URL="https://raw.githubusercontent.com/algorand/go-algorand/refs/heads/master/installer/genesis/${NETWORK}/genesis.json"
 
 # Update and install dependencies
-RUN apt-get update && apt-get install -y --no-install-recommends \
+RUN chmod 1777 /tmp && \
+    apt-get update && apt-get install -y --no-install-recommends \
     python3 \
     python3-pip \
     python3.11-venv \
