@@ -62,9 +62,38 @@ ensure_config() {
         ["EnableCatchup"]=true
         ["EnableRestAPI"]=true
         ["EnableRelay"]=false
-        ["AnnounceParticipationKey"]=true
         ["MaxConnections"]=64
-        ["EnableTelemetry"]=true
+        ["EnableTelemetry"]=false
+        ["LedgerSynchronousMode"]=0
+        ["GossipFanout"]=10
+        ["BaseLoggerDebugLevel"]=0
+        ["DNSSecurityFlags"]=0
+        ["Archival"]]=false
+        ["BaseLoggerDebugLevel"]]=3
+        ["EndpointAddress"]]="0.0.0.0:8080"
+        ["EnableMetricReporting"]]=true
+        ["NodeExporterPath"]]="/node/bin/node_exporter"
+        ["EnableRuntimeMetrics"]]=true
+        ["EnableLedgerService"]]=true
+        ["EnableBlockService"]]=true
+        ["LedgerSynchronousMode"]]=2
+        ["DatabaseReadOnly"]]=false
+        ["SQLiteJournalMode"]]="WAL"
+        ["SQLiteSynchronous"]]="NORMAL"
+        ["SQLiteLockTimeout"]]=20000
+        ["SQLitePageSize"]]=16384
+        ["SQLiteCacheSize"]]=2000000
+        ["SQLiteBusyTimeout"]]=20000
+        ["DeadlockDetection"]]=0
+        ["TransactionTimeoutSeconds"]]=10
+        ["SQLiteTempStore"]]="MEMORY"
+        ["SQLiteMmapSize"]]=268435456
+        ["SQLiteDefaultTimeout"]]=20000
+        ["CatchupParallelBlocks"]]=8
+        ["EnableCatchupFromArchival"]]=false
+        ["DisableNetworking"]]=false
+        ["MaxCatchupBlocks"]]=100
+        ["EnableOutgoingConnectionThrottling"]]=true
     )
 
     log_info "Updating config.json with recommended settings..."
