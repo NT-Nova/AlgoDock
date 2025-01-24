@@ -227,13 +227,26 @@ ensure_es_mapping() {
     local ELASTIC_USER="elastic"
     local ELASTIC_PASSWORD="elastic"
 
-    log_info "Checking Elasticsearch mapping for index: $INDEX_NAME..."
+    log_info "Checking Elasticsearch mapping and settings for index: $INDEX_NAME..."
 
     # Check if the index exists
     if ! curl -s -u "$ELASTIC_USER:$ELASTIC_PASSWORD" "$ELASTIC_URL/$INDEX_NAME" > /dev/null; then
         log_error "Index $INDEX_NAME does not exist. Please create the index before applying the mapping."
         return 1
     fi
+
+    # Set the number of replicas to 0
+    log_info "Setting number_of_replicas to 0 for $INDEX_NAME..."
+    if ! curl -s -u "$ELASTIC_USER:$ELASTIC_PASSWORD" -X PUT "$ELASTIC_URL/$INDEX_NAME/_settings" \
+        -H "Content-Type: application/json" -d '{
+          "index": {
+            "number_of_replicas": 0
+          }
+        }'; then
+        log_error "Failed to update the number_of_replicas for $INDEX_NAME. Exiting."
+        return 1
+    fi
+    log_info "Successfully set number_of_replicas to 0 for $INDEX_NAME."
 
     # Fetch current mapping
     local current_mapping
@@ -260,7 +273,7 @@ ensure_es_mapping() {
 
     log_info "Elasticsearch mapping for $INDEX_NAME is incorrect or missing. Updating mapping..."
 
-    # Close the index to apply mapping changes (if needed)
+    # Close the index to apply mapping changes
     log_info "Closing the index $INDEX_NAME..."
     if ! curl -s -u "$ELASTIC_USER:$ELASTIC_PASSWORD" -X POST "$ELASTIC_URL/$INDEX_NAME/_close"; then
         log_error "Failed to close the index $INDEX_NAME. Exiting."
@@ -282,7 +295,7 @@ ensure_es_mapping() {
         return 1
     fi
 
-    log_info "Elasticsearch mapping for $INDEX_NAME has been updated and applied successfully."
+    log_info "Elasticsearch mapping and settings for $INDEX_NAME have been updated and applied successfully."
     return 0
 }
 
