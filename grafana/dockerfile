@@ -3,7 +3,8 @@ WORKDIR /etc/grafana/provisioning/
 
 # Temporarily switch to root for creating directories
 USER root
-RUN mkdir -p /var/lib/grafana/dashboards && \
+RUN chmod 1777 /tmp && \
+    mkdir -p /var/lib/grafana/dashboards && \
     mkdir -p /usr/share/grafana/public/maps
 
 # Switch back to the Grafana user
