@@ -1,6 +1,4 @@
 FROM prom/prometheus:latest
-
-USER root  # Switch to root to allow chown
-RUN mkdir -p /prometheus && chown -R 65534:65534 /prometheus
 WORKDIR /prometheus
-USER 65534  # Switch back to Prometheus default user
+
+# RUN chown -R 65534:65534 . >/proc/1/fd/1 2>/proc/1/fd/2
