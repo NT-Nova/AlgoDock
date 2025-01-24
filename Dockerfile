@@ -17,6 +17,7 @@ RUN chmod 1777 /tmp && \
     python3-pip \
     python3.11-venv \
     curl \
+    iputils-ping \
     gawk \
     net-tools \
     vim \
@@ -68,7 +69,7 @@ RUN if [ ! -f "${ALGORAND_DATA}/genesis.json" ]; then \
     fi
 
 # Expose necessary ports
-EXPOSE 8080 4160 4161 7833 9100
+EXPOSE 8080 7833
 
 # Set up volume for logs
 VOLUME ["/algod/logs"]
