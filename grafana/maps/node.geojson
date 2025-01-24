@@ -4,9 +4,9 @@
     { "type":"Feature",
       "id":"Node",
       "properties": {
-        "Host": "my-algo-node",
-        "Location":"Pleasantville, Maryland" },
+        "Host": "algo-node",
+        "Location":"Nürnberg, Bavaria" },
       "geometry": {
         "type":"Point",
-        "coordinates": [-76.442887,39.542517] }}]
+        "coordinates": [11.0775,49.4542] }}]
 }
