@@ -63,14 +63,13 @@ ensure_config() {
         ["EnableRestAPI"]=true
         ["EnableRelay"]=false
         ["MaxConnections"]=64
-        ["EnableTelemetry"]=false
+        ["EnableTelemetry"]=true
         ["LedgerSynchronousMode"]=0
         ["GossipFanout"]=10
         ["BaseLoggerDebugLevel"]=0
         ["DNSSecurityFlags"]=0
         ["Archival"]=false
         ["BaseLoggerDebugLevel"]=3
-        ["EndpointAddress"]="0.0.0.0:8080"
         ["EnableMetricReporting"]=true
         ["NodeExporterPath"]="/node/bin/node_exporter"
         ["EnableRuntimeMetrics"]=true
