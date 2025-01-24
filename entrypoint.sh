@@ -63,7 +63,7 @@ ensure_config() {
         ["EnableRestAPI"]=true
         ["EnableRelay"]=false
         ["MaxConnections"]=64
-        ["EnableTelemetry"]=true
+        ["EnableTelemetry"]=false
         ["LedgerSynchronousMode"]=0
         ["GossipFanout"]=10
         ["BaseLoggerDebugLevel"]=0
