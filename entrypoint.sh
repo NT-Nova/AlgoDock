@@ -94,7 +94,9 @@ ensure_config() {
         ["DisableNetworking"]=false
         ["MaxCatchupBlocks"]=100
         ["EnableOutgoingConnectionThrottling"]=true
+        ["TelemetryEndpoints"]="http://algomon-elasticsearch:9200"
     )
+        #  ["ExcludeFields"]=["Metrics", "details"]
 
     log_info "Updating config.json with recommended settings..."
     for key in "${!RECOMMENDED_CONFIG[@]}"; do
