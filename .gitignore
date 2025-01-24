@@ -1,3 +1,9 @@
 secrets
-data/*
+data/mainnet-v*
+api-caller/data/*
+elasticsearch/data/*
+prometheus/data/*
+grafana/data/*
+accounts.json
 .DS_Store
+*.log
