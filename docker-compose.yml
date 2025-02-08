@@ -122,58 +122,58 @@ services:
   #     start_period: 15s
   #     timeout: 10s
 
-# Note: on Linux, in the dokcer root, under folder ./grafana, grant write permissions via $ chmod -R o+w *
-  algomon-grafana:
-    image: grafana/grafana:latest
-    container_name: algomon-grafana
-    hostname: algomon-grafana
-    build:
-      context: ./grafana
-      tags:
-        - "algomon/grafana:latest"
-    restart: always
-    networks:
-      - algorand-network
-    # ports:
-    #   - "3000:3000"
-    depends_on:
-      algomon-prometheus:
-        condition: "service_healthy"
-      algomon-elasticsearch:
-        condition: "service_healthy"
-      algomon-api-caller:
-        condition: "service_healthy"
-    user: "472:472" # This is Grafana's default user:group
-    volumes:
-      - ./grafana/data:/var/lib/grafana
-      - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
-      - ./grafana/maps:/usr/share/grafana/public/maps:ro
-      - ./grafana/dashboard-provider.yaml:/etc/grafana/provisioning/dashboards/default.yaml:ro
-      - ./grafana/datasource-manifest.yaml:/etc/grafana/provisioning/datasources/default.yaml:ro
-    environment:
-      - GF_SECURITY_ADMIN_PASSWORD=AlgoMon
-      - GF_SECURITY_ALLOW_EMBEDDING=true
-      - GF_USERS_ALLOW_SIGN_UP=false
-      - GF_SMTP_ENABLED=true
-      - GF_SMTP_HOST=smtp.gmail.com:587
-      - GF_SMTP_USER=my-email-address@gmail.com
-      - GF_SMTP_PASSWORD=my-password
-      - GF_SMTP_FROM_ADDRESS=my-email-address@gmail.com
-      - GF_AUTH_ANONYMOUS_ORG_ROLE=Admin
-      - GF_AUTH_ANONYMOUS_ENABLED=true
-      - GF_AUTH_ANONYMOUS_HIDE_VERSION=true
-      - GF_AUTH_BASIC_ENABLED=false
-      - GF_AUTH_DISABLE_LOGIN_FORM=true
-      - GF_AUTH_DISABLE_SIGNOUT_MENU=true
-      - GF_ENABLE_GZIP=true
-      - GF_USERS_DEFAULT_THEME=dark
-      - GF_DASHBOARDS_DEFAULT_HOME_DASHBOARD_PATH=/var/lib/grafana/dashboards/algomon.json
-      - GF_INSTALL_PLUGINS=grafana-opensearch-datasource
-    healthcheck:
-      test: curl -s http://localhost:3000/api/health | grep -q "ok"
-      retries: 5
-      start_period: 15s
-      timeout: 10s
+# # Note: on Linux, in the dokcer root, under folder ./grafana, grant write permissions via $ chmod -R o+w *
+#   algomon-grafana:
+#     image: grafana/grafana:latest
+#     container_name: algomon-grafana
+#     hostname: algomon-grafana
+#     build:
+#       context: ./grafana
+#       tags:
+#         - "algomon/grafana:latest"
+#     restart: always
+#     networks:
+#       - algorand-network
+#     # ports:
+#     #   - "3000:3000"
+#     depends_on:
+#       algomon-prometheus:
+#         condition: "service_healthy"
+#       algomon-elasticsearch:
+#         condition: "service_healthy"
+#       algomon-api-caller:
+#         condition: "service_healthy"
+#     user: "472:472" # This is Grafana's default user:group
+#     volumes:
+#       - ./grafana/data:/var/lib/grafana
+#       - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
+#       - ./grafana/maps:/usr/share/grafana/public/maps:ro
+#       - ./grafana/dashboard-provider.yaml:/etc/grafana/provisioning/dashboards/default.yaml:ro
+#       - ./grafana/datasource-manifest.yaml:/etc/grafana/provisioning/datasources/default.yaml:ro
+#     environment:
+#       - GF_SECURITY_ADMIN_PASSWORD=AlgoMon
+#       - GF_SECURITY_ALLOW_EMBEDDING=true
+#       - GF_USERS_ALLOW_SIGN_UP=false
+#       - GF_SMTP_ENABLED=true
+#       - GF_SMTP_HOST=smtp.gmail.com:587
+#       - GF_SMTP_USER=my-email-address@gmail.com
+#       - GF_SMTP_PASSWORD=my-password
+#       - GF_SMTP_FROM_ADDRESS=my-email-address@gmail.com
+#       - GF_AUTH_ANONYMOUS_ORG_ROLE=Admin
+#       - GF_AUTH_ANONYMOUS_ENABLED=true
+#       - GF_AUTH_ANONYMOUS_HIDE_VERSION=true
+#       - GF_AUTH_BASIC_ENABLED=false
+#       - GF_AUTH_DISABLE_LOGIN_FORM=true
+#       - GF_AUTH_DISABLE_SIGNOUT_MENU=true
+#       - GF_ENABLE_GZIP=true
+#       - GF_USERS_DEFAULT_THEME=dark
+#       - GF_DASHBOARDS_DEFAULT_HOME_DASHBOARD_PATH=/var/lib/grafana/dashboards/algomon.json
+#       - GF_INSTALL_PLUGINS=grafana-opensearch-datasource
+#     healthcheck:
+#       test: curl -s http://localhost:3000/api/health | grep -q "ok"
+#       retries: 5
+#       start_period: 15s
+#       timeout: 10s
 
   Wireguard:
     image: linuxserver/wireguard:latest
