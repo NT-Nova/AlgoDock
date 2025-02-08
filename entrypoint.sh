@@ -51,10 +51,15 @@ ensure_config() {
     # If config.json doesn't exist, download it
     if [ ! -f "$CONFIG_FILE" ]; then
         log_info "config.json not found. Downloading from ${CONFIG_URL}..."
-        curl -fSL "${CONFIG_URL}" -o "$CONFIG_FILE" || {
+        if ! curl -fSL "${CONFIG_URL}" -o "$CONFIG_FILE"; then
             log_error "Failed to download config.json. Exiting."
             exit 1
-        }
+        fi
+    fi
+
+    if [ ! -s "$CONFIG_FILE" ]; then
+        log_error "Downloaded config.json is empty or missing. Exiting."
+        exit 1
     fi
 
     # Recommended configuration changes
