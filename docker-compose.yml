@@ -15,10 +15,6 @@ services:
         target: /algod/data
         consistency: delegated
       - type: bind
-        source: ./data/config.json
-        target: /etc/algorand/config.json
-        read_only: true
-      - type: bind
         source: ./data/logging.config
         target: /etc/algorand/logging.config
         read_only: true   
@@ -34,8 +30,8 @@ services:
     environment:
       ALGOD_ADDRESS: "http://0.0.0.0:8080"  # Use container-wide accessible address
       NETWORK: "mainnet"
-      START_KMD: 1
-      TELEMETRY_NAME: algomon-algonode
+      # START_KMD: 1
+      # TELEMETRY_NAME: algomon-algonode
       TOKEN: 17325eb71851bc539a923d7c5171d64073c314a0dd1e4a613d1c82fb91baf277
       ADMIN_TOKEN: 17325eb71851bc539a923d7c5171d64073c314a0dd1e4a613d1c82fb91baf277
       KMD_TOKEN: 17325eb71851bc539a923d7c5171d64073c314a0dd1e4a613d1c82fb91baf277

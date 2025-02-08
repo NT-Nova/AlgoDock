@@ -27,129 +27,116 @@ exit_with_error() { log_error "$*"; exit 1; }
 
 # Function to ensure the data directory exists
 ensure_data_dir() {
-    if [ ! -d "$ALGORAND_DATA" ]; then
-        log_info "Creating data directory at $ALGORAND_DATA..."
-        mkdir -p "$ALGORAND_DATA"
+    if [ ! -d "${ALGORAND_DATA}" ]; then
+        log_info "Creating data directory at ${ALGORAND_DATA}..."
+        mkdir -p "${ALGORAND_DATA}"
     fi
 }
 
 # Function to download genesis.json if not present
 ensure_genesis() {
-    log_info "Ensuring genesis.json exists for $NETWORK..."
-    if [ ! -f "${ALGORAND_DATA}/genesis.json" ]; then
+    local genesis_file="${ALGORAND_DATA}/genesis.json"
+    log_info "Ensuring genesis.json exists for ${NETWORK}..."
+    if [ ! -f "${genesis_file}" ]; then
         log_info "genesis.json not found. Downloading from ${GENESIS_URL}..."
-        curl -fSL "${GENESIS_URL}" -o "${ALGORAND_DATA}/genesis.json" || exit_with_error "Failed to download genesis.json"
+        curl -fSL "${GENESIS_URL}" -o "${genesis_file}" || exit_with_error "Failed to download genesis.json"
     else
         log_info "genesis.json already exists. Skipping download."
     fi
 }
 
 ensure_config() {
-    CONFIG_FILE="${ALGORAND_DATA}/config.json"
+    local config_file="${ALGORAND_DATA}/config.json"
     log_info "Ensuring config.json exists and is properly formatted..."
 
-    # If config.json exists but is not a regular file (e.g. a directory), remove it.
-    if [ -e "$CONFIG_FILE" ] && [ ! -f "$CONFIG_FILE" ]; then
-        log_info "Found $CONFIG_FILE exists but is not a file. Removing it..."
-        rm -rf "$CONFIG_FILE"
+    # If something exists at config.json and it's not a file (for example, a directory), remove it.
+    if [ -e "${config_file}" ] && [ ! -f "${config_file}" ]; then
+        log_info "Found ${config_file} exists but is not a file. Removing it..."
+        rm -rf "${config_file}"
     fi
 
     # If config.json doesn't exist, download it.
-    if [ ! -f "$CONFIG_FILE" ]; then
+    if [ ! -f "${config_file}" ]; then
         log_info "config.json not found. Downloading from ${CONFIG_URL}..."
-        if ! curl -fSL "${CONFIG_URL}" -o "$CONFIG_FILE"; then
-            log_error "Failed to download config.json. Exiting."
-            exit 1
-        fi
+        curl -fSL "${CONFIG_URL}" -o "${config_file}" || exit_with_error "Failed to download config.json"
     fi
 
-    # Define recommended configuration settings.
+    # Recommended configuration settings.
     declare -A RECOMMENDED_CONFIG=(
-        ["EnableCatchup"]=true
-        ["EnableRestAPI"]=true
-        ["EnableRelay"]=false
-        ["MaxConnections"]=64
-        ["EnableTelemetry"]=true
-        ["LedgerSynchronousMode"]=2
-        ["GossipFanout"]=10
-        ["BaseLoggerDebugLevel"]=3
-        ["DNSSecurityFlags"]=0
-        ["Archival"]=false
-        ["EndpointAddress"]="0.0.0.0:8080"
-        ["NetAddress"]="0.0.0.0:38086"
-        ["EnableP2P"]=true
-        ["EnableMetricReporting"]=true
-        ["NodeExporterPath"]="/node/bin/node_exporter --web.listen-address=0.0.0.0:9100"
-        ["EnableRuntimeMetrics"]=true
-        ["EnableLedgerService"]=true
-        ["EnableBlockService"]=true
-        ["DatabaseReadOnly"]=false
-        ["SQLiteJournalMode"]="WAL"
-        ["SQLiteSynchronous"]="NORMAL"
-        ["SQLiteLockTimeout"]=20000
-        ["SQLitePageSize"]=16384
-        ["SQLiteCacheSize"]=2000000
-        ["SQLiteBusyTimeout"]=20000
-        ["DeadlockDetection"]=0
-        ["TransactionTimeoutSeconds"]=10
-        ["SQLiteTempStore"]="MEMORY"
-        ["SQLiteMmapSize"]=268435456
-        ["SQLiteDefaultTimeout"]=20000
-        ["CatchupParallelBlocks"]=8
-        ["EnableCatchupFromArchival"]=false
-        ["DisableNetworking"]=false
-        ["MaxCatchupBlocks"]=100
-        ["EnableOutgoingConnectionThrottling"]=true
-        ["TelemetryEndpoints"]="http://algomon-elasticsearch:9200"
-        ["EnableAgreementTimeMetrics"]=true
-        ["EnableProcessBlockStats"]=true
-        ["EnableNetDevMetrics"]=true
-        ["EnableAgreementReporting"]=true
+        [EnableCatchup]=true
+        [EnableRestAPI]=true
+        [EnableRelay]=false
+        [MaxConnections]=64
+        [EnableTelemetry]=true
+        [LedgerSynchronousMode]=2
+        [GossipFanout]=10
+        [BaseLoggerDebugLevel]=3
+        [DNSSecurityFlags]=0
+        [Archival]=false
+        [EndpointAddress]="0.0.0.0:8080"
+        [NetAddress]="0.0.0.0:38086"
+        [EnableP2P]=true
+        [EnableMetricReporting]=true
+        [NodeExporterPath]="/node/bin/node_exporter --web.listen-address=0.0.0.0:9100"
+        [EnableRuntimeMetrics]=true
+        [EnableLedgerService]=true
+        [EnableBlockService]=true
+        [DatabaseReadOnly]=false
+        [SQLiteJournalMode]="WAL"
+        [SQLiteSynchronous]="NORMAL"
+        [SQLiteLockTimeout]=20000
+        [SQLitePageSize]=16384
+        [SQLiteCacheSize]=2000000
+        [SQLiteBusyTimeout]=20000
+        [DeadlockDetection]=0
+        [TransactionTimeoutSeconds]=10
+        [SQLiteTempStore]="MEMORY"
+        [SQLiteMmapSize]=268435456
+        [SQLiteDefaultTimeout]=20000
+        [CatchupParallelBlocks]=8
+        [EnableCatchupFromArchival]=false
+        [DisableNetworking]=false
+        [MaxCatchupBlocks]=100
+        [EnableProcessBlockStats]=true
     )
 
-    # Update each key-value pair in the config file.
-    log_info "Updating config.json with recommended settings..."
+    # Update or add each recommended key in config.json.
     for key in "${!RECOMMENDED_CONFIG[@]}"; do
-        value=${RECOMMENDED_CONFIG[$key]}
-
-        # If the key exists, compare values.
-        if jq -e ".${key}" "$CONFIG_FILE" >/dev/null 2>&1; then
-            current_value=$(jq -r ".${key}" "$CONFIG_FILE")
-            # Compare as strings; this works if types match.
-            if [ "$current_value" != "$value" ]; then
-                log_info "Updating $key from $current_value to $value..."
-                if [[ "$value" =~ ^[0-9]+$|^(true|false)$ ]]; then
-                    jq --arg key "$key" --argjson value "$value" '.[$key] = $value' "$CONFIG_FILE" > "${CONFIG_FILE}.tmp" \
-                        && mv "${CONFIG_FILE}.tmp" "$CONFIG_FILE"
+        value="${RECOMMENDED_CONFIG[${key}]}"
+        if jq -e ".${key}" "${config_file}" >/dev/null 2>&1; then
+            current_value=$(jq -r ".${key}" "${config_file}")
+            if [ "${current_value}" != "${value}" ]; then
+                log_info "Updating ${key} from ${current_value} to ${value}..."
+                if [[ "${value}" =~ ^[0-9]+$|^(true|false)$ ]]; then
+                    jq --arg key "${key}" --argjson value "${value}" '.[$key] = $value' "${config_file}" > "${config_file}.tmp" \
+                        && mv "${config_file}.tmp" "${config_file}"
                 else
-                    jq --arg key "$key" --arg value "$value" '.[$key] = $value' "$CONFIG_FILE" > "${CONFIG_FILE}.tmp" \
-                        && mv "${CONFIG_FILE}.tmp" "$CONFIG_FILE"
+                    jq --arg key "${key}" --arg value "${value}" '.[$key] = $value' "${config_file}" > "${config_file}.tmp" \
+                        && mv "${config_file}.tmp" "${config_file}"
                 fi
             fi
         else
-            # Add the key if it doesn't exist.
-            log_info "Adding $key with value $value..."
-            if [[ "$value" =~ ^[0-9]+$|^(true|false)$ ]]; then
-                jq --arg key "$key" --argjson value "$value" '.[$key] = $value' "$CONFIG_FILE" > "${CONFIG_FILE}.tmp" \
-                    && mv "${CONFIG_FILE}.tmp" "$CONFIG_FILE"
+            log_info "Adding ${key} with value ${value}..."
+            if [[ "${value}" =~ ^[0-9]+$|^(true|false)$ ]]; then
+                jq --arg key "${key}" --argjson value "${value}" '.[$key] = $value' "${config_file}" > "${config_file}.tmp" \
+                    && mv "${config_file}.tmp" "${config_file}"
             else
-                jq --arg key "$key" --arg value "$value" '.[$key] = $value' "$CONFIG_FILE" > "${CONFIG_FILE}.tmp" \
-                    && mv "${CONFIG_FILE}.tmp" "$CONFIG_FILE"
+                jq --arg key "${key}" --arg value "${value}" '.[$key] = $value' "${config_file}" > "${config_file}.tmp" \
+                    && mv "${config_file}.tmp" "${config_file}"
             fi
         fi
     done
 
-    # Update the ExcludeFields array unconditionally.
-    log_info "Updating ExcludeFields..."
-    jq '.ExcludeFields = ["Metrics", "details"]' "$CONFIG_FILE" > "${CONFIG_FILE}.tmp" && mv "${CONFIG_FILE}.tmp" "$CONFIG_FILE"
+    # # Unconditionally update ExcludeFields array.
+    # log_info "Updating ExcludeFields..."
+    # jq '.ExcludeFields = ["Metrics", "details"]' "${config_file}" > "${config_file}.tmp" && mv "${config_file}.tmp" "${config_file}"
 
-    # Validate JSON.
-    if ! jq empty "$CONFIG_FILE" >/dev/null 2>&1; then
-        log_error "Invalid JSON structure in $CONFIG_FILE. Exiting."
-        exit 1
+    # Validate the JSON structure.
+    if ! jq empty "${config_file}" >/dev/null 2>&1; then
+        exit_with_error "Invalid JSON structure in ${config_file}. Exiting."
     fi
 
-    log_info "config.json updated successfully and validated."
+    log_info "config.json updated and validated successfully."
 }
 
 # Function to fetch the latest catchpoint
