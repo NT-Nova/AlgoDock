@@ -95,32 +95,32 @@ services:
   #     start_period: 15s
   #     timeout: 10s
   
-  # algomon-api-caller:
-    image: ubuntu:latest
-    container_name: algomon-api-caller
-    hostname: algomon-api-caller
-    build:
-      context: ./api-caller
-      tags:
-        - "algomon/api-caller:latest"
-    restart: always
-    tty: true
-    networks:
-      - algorand-network
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
-    depends_on:
-      algomon-elasticsearch:
-        condition: "service_healthy"
-    volumes:
-      - ./api-caller/algonode-api-origin.yaml:/etc/algomon/api-caller/algonode-api-origin.yaml:ro
-      - ./api-caller/algonode-api-endpoint.yaml:/etc/algomon/api-caller/algonode-api-endpoint.yaml:ro
-      - ./api-caller/algonode-api-caller.sh:/etc/algomon/api-caller/algonode-api-caller.sh:ro
-    healthcheck:
-      test: ps -o user,pid,start,cmd | grep -q "cron"
-      retries: 5
-      start_period: 15s
-      timeout: 10s
+  # # algomon-api-caller:
+  #   image: ubuntu:latest
+  #   container_name: algomon-api-caller
+  #   hostname: algomon-api-caller
+  #   build:
+  #     context: ./api-caller
+  #     tags:
+  #       - "algomon/api-caller:latest"
+  #   restart: always
+  #   tty: true
+  #   networks:
+  #     - algorand-network
+  #   extra_hosts:
+  #     - "host.docker.internal:host-gateway"
+  #   depends_on:
+  #     algomon-elasticsearch:
+  #       condition: "service_healthy"
+  #   volumes:
+  #     - ./api-caller/algonode-api-origin.yaml:/etc/algomon/api-caller/algonode-api-origin.yaml:ro
+  #     - ./api-caller/algonode-api-endpoint.yaml:/etc/algomon/api-caller/algonode-api-endpoint.yaml:ro
+  #     - ./api-caller/algonode-api-caller.sh:/etc/algomon/api-caller/algonode-api-caller.sh:ro
+  #   healthcheck:
+  #     test: ps -o user,pid,start,cmd | grep -q "cron"
+  #     retries: 5
+  #     start_period: 15s
+  #     timeout: 10s
 
 # Note: on Linux, in the dokcer root, under folder ./grafana, grant write permissions via $ chmod -R o+w *
   algomon-grafana:
@@ -206,8 +206,8 @@ volumes:
     driver: local
   algorand-logs:
     driver: local
-  grafana-data:
-    driver: local
+  # grafana-data:
+  #   driver: local
 
 secrets:
   ACCOUNT_MNEMONIC:
