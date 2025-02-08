@@ -48,7 +48,13 @@ ensure_config() {
     CONFIG_FILE="${ALGORAND_DATA}/config.json"
     log_info "Ensuring config.json exists and is properly formatted..."
 
-    # If config.json doesn't exist, download it
+    # If config.json exists but is not a regular file (e.g. a directory), remove it.
+    if [ -e "$CONFIG_FILE" ] && [ ! -f "$CONFIG_FILE" ]; then
+        log_info "Found $CONFIG_FILE exists but is not a file. Removing it..."
+        rm -rf "$CONFIG_FILE"
+    fi
+
+    # If config.json doesn't exist, download it.
     if [ ! -f "$CONFIG_FILE" ]; then
         log_info "config.json not found. Downloading from ${CONFIG_URL}..."
         if ! curl -fSL "${CONFIG_URL}" -o "$CONFIG_FILE"; then
@@ -57,24 +63,18 @@ ensure_config() {
         fi
     fi
 
-    if [ ! -s "$CONFIG_FILE" ]; then
-        log_error "Downloaded config.json is empty or missing. Exiting."
-        exit 1
-    fi
-
-    # Recommended configuration changes
+    # Define recommended configuration settings.
     declare -A RECOMMENDED_CONFIG=(
         ["EnableCatchup"]=true
         ["EnableRestAPI"]=true
         ["EnableRelay"]=false
         ["MaxConnections"]=64
         ["EnableTelemetry"]=true
-        ["LedgerSynchronousMode"]=0
+        ["LedgerSynchronousMode"]=2
         ["GossipFanout"]=10
-        ["BaseLoggerDebugLevel"]=0
+        ["BaseLoggerDebugLevel"]=3
         ["DNSSecurityFlags"]=0
         ["Archival"]=false
-        ["BaseLoggerDebugLevel"]=3
         ["EndpointAddress"]="0.0.0.0:8080"
         ["NetAddress"]="0.0.0.0:38086"
         ["EnableP2P"]=true
@@ -83,7 +83,6 @@ ensure_config() {
         ["EnableRuntimeMetrics"]=true
         ["EnableLedgerService"]=true
         ["EnableBlockService"]=true
-        ["LedgerSynchronousMode"]=2
         ["DatabaseReadOnly"]=false
         ["SQLiteJournalMode"]="WAL"
         ["SQLiteSynchronous"]="NORMAL"
@@ -108,49 +107,49 @@ ensure_config() {
         ["EnableAgreementReporting"]=true
     )
 
-    # ExcludeFields array
-    EXCLUDE_FIELDS=("Metrics" "details")
-
+    # Update each key-value pair in the config file.
     log_info "Updating config.json with recommended settings..."
     for key in "${!RECOMMENDED_CONFIG[@]}"; do
         value=${RECOMMENDED_CONFIG[$key]}
 
-        # Check if the key exists in config.json
+        # If the key exists, compare values.
         if jq -e ".${key}" "$CONFIG_FILE" >/dev/null 2>&1; then
-            # If the value differs, update it
             current_value=$(jq -r ".${key}" "$CONFIG_FILE")
+            # Compare as strings; this works if types match.
             if [ "$current_value" != "$value" ]; then
                 log_info "Updating $key from $current_value to $value..."
                 if [[ "$value" =~ ^[0-9]+$|^(true|false)$ ]]; then
-                    # Use --argjson for numeric/boolean values
-                    jq --arg key "$key" --argjson value "$value" '.[$key] = $value' "$CONFIG_FILE" > "${CONFIG_FILE}.tmp" && mv "${CONFIG_FILE}.tmp" "$CONFIG_FILE"
+                    jq --arg key "$key" --argjson value "$value" '.[$key] = $value' "$CONFIG_FILE" > "${CONFIG_FILE}.tmp" \
+                        && mv "${CONFIG_FILE}.tmp" "$CONFIG_FILE"
                 else
-                    # Use --arg for string values
-                    jq --arg key "$key" --arg value "$value" '.[$key] = $value' "$CONFIG_FILE" > "${CONFIG_FILE}.tmp" && mv "${CONFIG_FILE}.tmp" "$CONFIG_FILE"
+                    jq --arg key "$key" --arg value "$value" '.[$key] = $value' "$CONFIG_FILE" > "${CONFIG_FILE}.tmp" \
+                        && mv "${CONFIG_FILE}.tmp" "$CONFIG_FILE"
                 fi
             fi
         else
-            # Add the key-value pair if it doesn't exist
+            # Add the key if it doesn't exist.
             log_info "Adding $key with value $value..."
             if [[ "$value" =~ ^[0-9]+$|^(true|false)$ ]]; then
-                jq --arg key "$key" --argjson value "$value" '.[$key] = $value' "$CONFIG_FILE" > "${CONFIG_FILE}.tmp" && mv "${CONFIG_FILE}.tmp" "$CONFIG_FILE"
+                jq --arg key "$key" --argjson value "$value" '.[$key] = $value' "$CONFIG_FILE" > "${CONFIG_FILE}.tmp" \
+                    && mv "${CONFIG_FILE}.tmp" "$CONFIG_FILE"
             else
-                jq --arg key "$key" --arg value "$value" '.[$key] = $value' "$CONFIG_FILE" > "${CONFIG_FILE}.tmp" && mv "${CONFIG_FILE}.tmp" "$CONFIG_FILE"
+                jq --arg key "$key" --arg value "$value" '.[$key] = $value' "$CONFIG_FILE" > "${CONFIG_FILE}.tmp" \
+                    && mv "${CONFIG_FILE}.tmp" "$CONFIG_FILE"
             fi
         fi
     done
 
-    # Add or update the ExcludeFields array
+    # Update the ExcludeFields array unconditionally.
     log_info "Updating ExcludeFields..."
     jq '.ExcludeFields = ["Metrics", "details"]' "$CONFIG_FILE" > "${CONFIG_FILE}.tmp" && mv "${CONFIG_FILE}.tmp" "$CONFIG_FILE"
 
-    # Validate the resulting JSON structure
+    # Validate JSON.
     if ! jq empty "$CONFIG_FILE" >/dev/null 2>&1; then
         log_error "Invalid JSON structure in $CONFIG_FILE. Exiting."
         exit 1
     fi
 
-    log_info "Config.json updated successfully and validated."
+    log_info "config.json updated successfully and validated."
 }
 
 # Function to fetch the latest catchpoint
