@@ -226,91 +226,91 @@ monitor_logs() {
 }
 
 # Function to ensure Elasticsearch mapping
-ensure_es_mapping() {
-    local ELASTIC_URL="http://algomon-elasticsearch:9200"
-    local INDEX_NAME="stable-mainnet-v1.0"
-    local MAPPING_FILE="data/mapping.json"  # Adjust path if needed
-    local ELASTIC_USER="elastic"
-    local ELASTIC_PASSWORD="elastic"
+# ensure_es_mapping() {
+#     local ELASTIC_URL="http://algomon-elasticsearch:9200"
+#     local INDEX_NAME="stable-mainnet-v1.0"
+#     local MAPPING_FILE="data/mapping.json"  # Adjust path if needed
+#     local ELASTIC_USER="elastic"
+#     local ELASTIC_PASSWORD="elastic"
 
-    log_info "Checking Elasticsearch mapping and settings for index: $INDEX_NAME..."
+#     log_info "Checking Elasticsearch mapping and settings for index: $INDEX_NAME..."
 
-    # Check if the index exists
-    if ! curl -s -u "$ELASTIC_USER:$ELASTIC_PASSWORD" "$ELASTIC_URL/$INDEX_NAME" > /dev/null; then
-        log_error "Index $INDEX_NAME does not exist. Please create the index before applying the mapping."
-        return 1
-    fi
+#     # Check if the index exists
+#     if ! curl -s -u "$ELASTIC_USER:$ELASTIC_PASSWORD" "$ELASTIC_URL/$INDEX_NAME" > /dev/null; then
+#         log_error "Index $INDEX_NAME does not exist. Please create the index before applying the mapping."
+#         return 1
+#     fi
 
-    # Set the number of replicas to 0
-    log_info "Setting number_of_replicas to 0 for $INDEX_NAME..."
-    if ! curl -s -u "$ELASTIC_USER:$ELASTIC_PASSWORD" -X PUT "$ELASTIC_URL/$INDEX_NAME/_settings" \
-        -H "Content-Type: application/json" -d '{
-          "index": {
-            "number_of_replicas": 0
-          }
-        }'; then
-        log_error "Failed to update the number_of_replicas for $INDEX_NAME. Exiting."
-        return 1
-    fi
-    log_info "Successfully set number_of_replicas to 0 for $INDEX_NAME."
+#     # Set the number of replicas to 0
+#     log_info "Setting number_of_replicas to 0 for $INDEX_NAME..."
+#     if ! curl -s -u "$ELASTIC_USER:$ELASTIC_PASSWORD" -X PUT "$ELASTIC_URL/$INDEX_NAME/_settings" \
+#         -H "Content-Type: application/json" -d '{
+#           "index": {
+#             "number_of_replicas": 0
+#           }
+#         }'; then
+#         log_error "Failed to update the number_of_replicas for $INDEX_NAME. Exiting."
+#         return 1
+#     fi
+#     log_info "Successfully set number_of_replicas to 0 for $INDEX_NAME."
 
-    # Fetch current mapping
-    local current_mapping
-    current_mapping=$(curl -s -u "$ELASTIC_USER:$ELASTIC_PASSWORD" "$ELASTIC_URL/$INDEX_NAME/_mapping")
+#     # Fetch current mapping
+#     local current_mapping
+#     current_mapping=$(curl -s -u "$ELASTIC_USER:$ELASTIC_PASSWORD" "$ELASTIC_URL/$INDEX_NAME/_mapping")
 
-    # Check if current mapping is valid
-    if [ -z "$current_mapping" ] || ! echo "$current_mapping" | jq -e . > /dev/null 2>&1; then
-        log_error "Failed to fetch current mapping for $INDEX_NAME. Exiting."
-        return 1
-    fi
+#     # Check if current mapping is valid
+#     if [ -z "$current_mapping" ] || ! echo "$current_mapping" | jq -e . > /dev/null 2>&1; then
+#         log_error "Failed to fetch current mapping for $INDEX_NAME. Exiting."
+#         return 1
+#     fi
 
-    # Define expected mapping for comparison (compact JSON)
-    local expected_mapping
-    if ! expected_mapping=$(jq -c . "$MAPPING_FILE" 2>/dev/null); then
-        log_error "Failed to read or parse the mapping file: $MAPPING_FILE. Exiting."
-        return 1
-    fi
+#     # Define expected mapping for comparison (compact JSON)
+#     local expected_mapping
+#     if ! expected_mapping=$(jq -c . "$MAPPING_FILE" 2>/dev/null); then
+#         log_error "Failed to read or parse the mapping file: $MAPPING_FILE. Exiting."
+#         return 1
+#     fi
 
-    # Compare current mapping with expected mapping
-    if echo "$current_mapping" | grep -q "$expected_mapping"; then
-        log_info "Elasticsearch mapping for $INDEX_NAME is already correct."
-        return 0
-    fi
+#     # Compare current mapping with expected mapping
+#     if echo "$current_mapping" | grep -q "$expected_mapping"; then
+#         log_info "Elasticsearch mapping for $INDEX_NAME is already correct."
+#         return 0
+#     fi
 
-    log_info "Elasticsearch mapping for $INDEX_NAME is incorrect or missing. Updating mapping..."
+#     log_info "Elasticsearch mapping for $INDEX_NAME is incorrect or missing. Updating mapping..."
 
-    # Close the index to apply mapping changes
-    log_info "Closing the index $INDEX_NAME..."
-    if ! curl -s -u "$ELASTIC_USER:$ELASTIC_PASSWORD" -X POST "$ELASTIC_URL/$INDEX_NAME/_close"; then
-        log_error "Failed to close the index $INDEX_NAME. Exiting."
-        return 1
-    fi
+#     # Close the index to apply mapping changes
+#     log_info "Closing the index $INDEX_NAME..."
+#     if ! curl -s -u "$ELASTIC_USER:$ELASTIC_PASSWORD" -X POST "$ELASTIC_URL/$INDEX_NAME/_close"; then
+#         log_error "Failed to close the index $INDEX_NAME. Exiting."
+#         return 1
+#     fi
 
-    # Apply the mapping
-    log_info "Applying the updated mapping to $INDEX_NAME..."
-    if ! curl -s -u "$ELASTIC_USER:$ELASTIC_PASSWORD" -X PUT "$ELASTIC_URL/$INDEX_NAME/_mapping" \
-        -H "Content-Type: application/json" -d @"$MAPPING_FILE"; then
-        log_error "Failed to update the mapping for $INDEX_NAME. Exiting."
-        return 1
-    fi
+#     # Apply the mapping
+#     log_info "Applying the updated mapping to $INDEX_NAME..."
+#     if ! curl -s -u "$ELASTIC_USER:$ELASTIC_PASSWORD" -X PUT "$ELASTIC_URL/$INDEX_NAME/_mapping" \
+#         -H "Content-Type: application/json" -d @"$MAPPING_FILE"; then
+#         log_error "Failed to update the mapping for $INDEX_NAME. Exiting."
+#         return 1
+#     fi
 
-    # Reopen the index after applying mapping
-    log_info "Reopening the index $INDEX_NAME..."
-    if ! curl -s -u "$ELASTIC_USER:$ELASTIC_PASSWORD" -X POST "$ELASTIC_URL/$INDEX_NAME/_open"; then
-        log_error "Failed to reopen the index $INDEX_NAME. Exiting."
-        return 1
-    fi
+#     # Reopen the index after applying mapping
+#     log_info "Reopening the index $INDEX_NAME..."
+#     if ! curl -s -u "$ELASTIC_USER:$ELASTIC_PASSWORD" -X POST "$ELASTIC_URL/$INDEX_NAME/_open"; then
+#         log_error "Failed to reopen the index $INDEX_NAME. Exiting."
+#         return 1
+#     fi
 
-    log_info "Elasticsearch mapping and settings for $INDEX_NAME have been updated and applied successfully."
-    return 0
-}
+#     log_info "Elasticsearch mapping and settings for $INDEX_NAME have been updated and applied successfully."
+#     return 0
+# }
 
 # Main process
 main() {
     ensure_data_dir
     ensure_genesis
     ensure_config  # Ensure config.json is properly set up
-    ensure_es_mapping  # Ensure Elasticsearch mapping is correct
+    # ensure_es_mapping  # Ensure Elasticsearch mapping is correct
     start_node
     # start_node_kmd
     /node/bin/node_exporter --web.listen-address="0.0.0.0:9100" &

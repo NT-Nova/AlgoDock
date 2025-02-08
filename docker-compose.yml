@@ -14,10 +14,6 @@ services:
         source: ./data
         target: /algod/data
         consistency: delegated
-      - type: bind
-        source: ./data/logging.config
-        target: /etc/algorand/logging.config
-        read_only: true   
       - type: volume
         source: algorand-logs
         target: /algod/logs
@@ -39,67 +35,67 @@ services:
     networks:
       - algorand-network
 
-  algomon-prometheus:
-    image: prom/prometheus:main
-    container_name: algomon-prometheus
-    hostname: algomon-prometheus
-    build:
-      context: ./prometheus
-      tags:
-        - "algomon/prometheus:main"
-    restart: always
-    networks:
-      - algorand-network
-    # ports:
-    #   - "9090:9090"
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
-    volumes:
-      - ./prometheus/prometheus.yaml:/etc/prometheus/prometheus.yml:ro
-      - ./prometheus/metrics-sources.yaml:/etc/prometheus/metrics-sources.yaml:ro
-      - ./prometheus/data:/prometheus
-    healthcheck:
-      test: wget -qO- http://localhost:9090/-/healthy | grep -q "Healthy"
-      retries: 5
-      start_period: 15s
-      timeout: 10s
+  # algomon-prometheus:
+  #   image: prom/prometheus:main
+  #   container_name: algomon-prometheus
+  #   hostname: algomon-prometheus
+  #   build:
+  #     context: ./prometheus
+  #     tags:
+  #       - "algomon/prometheus:main"
+  #   restart: always
+  #   networks:
+  #     - algorand-network
+  #   # ports:
+  #   #   - "9090:9090"
+  #   extra_hosts:
+  #     - "host.docker.internal:host-gateway"
+  #   volumes:
+  #     - ./prometheus/prometheus.yaml:/etc/prometheus/prometheus.yml:ro
+  #     - ./prometheus/metrics-sources.yaml:/etc/prometheus/metrics-sources.yaml:ro
+  #     - ./prometheus/data:/prometheus
+  #   healthcheck:
+  #     test: wget -qO- http://localhost:9090/-/healthy | grep -q "Healthy"
+  #     retries: 5
+  #     start_period: 15s
+  #     timeout: 10s
 
-  algomon-elasticsearch:
-    image: docker.elastic.co/elasticsearch/elasticsearch:8.17.1
-    container_name: algomon-elasticsearch
-    hostname: algomon-elasticsearch
-    build:
-      context: ./elasticsearch
-      tags:
-        - "algomon/elasticsearch:8.17.1"
-    user: elasticsearch
-    restart: always
-    networks:
-      - algorand-network
-    # ports:
-    #   - "9200:9200"
-    volumes:
-      - ./elasticsearch/data:/usr/share/elasticsearch/data
-      - ./elasticsearch/elasticsearch.yaml:/usr/share/elasticsearch/config/elasticsearch.yml:ro
-      - ./elasticsearch/setup-es.sh:/setup-es.sh:ro
-    environment:
-      - discovery.type=single-node
-      - ELASTIC_PASSWORD=elastic
-      - xpack.security.enabled=false
-      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
-    entrypoint: >
-      /bin/sh -c '
-      /usr/local/bin/docker-entrypoint.sh elasticsearch &
-      sleep 10 && /setup-es.sh &
-      wait
-      '
-    healthcheck:
-      test: curl -s http://localhost:9200/_cat/health | grep -q "green\|yellow"
-      retries: 5
-      start_period: 15s
-      timeout: 10s
+  # algomon-elasticsearch:
+  #   image: docker.elastic.co/elasticsearch/elasticsearch:8.17.1
+  #   container_name: algomon-elasticsearch
+  #   hostname: algomon-elasticsearch
+  #   build:
+  #     context: ./elasticsearch
+  #     tags:
+  #       - "algomon/elasticsearch:8.17.1"
+  #   user: elasticsearch
+  #   restart: always
+  #   networks:
+  #     - algorand-network
+  #   # ports:
+  #   #   - "9200:9200"
+  #   volumes:
+  #     - ./elasticsearch/data:/usr/share/elasticsearch/data
+  #     - ./elasticsearch/elasticsearch.yaml:/usr/share/elasticsearch/config/elasticsearch.yml:ro
+  #     - ./elasticsearch/setup-es.sh:/setup-es.sh:ro
+  #   environment:
+  #     - discovery.type=single-node
+  #     - ELASTIC_PASSWORD=elastic
+  #     - xpack.security.enabled=false
+  #     - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+  #   entrypoint: >
+  #     /bin/sh -c '
+  #     /usr/local/bin/docker-entrypoint.sh elasticsearch &
+  #     sleep 10 && /setup-es.sh &
+  #     wait
+  #     '
+  #   healthcheck:
+  #     test: curl -s http://localhost:9200/_cat/health | grep -q "green\|yellow"
+  #     retries: 5
+  #     start_period: 15s
+  #     timeout: 10s
   
-  algomon-api-caller:
+  # algomon-api-caller:
     image: ubuntu:latest
     container_name: algomon-api-caller
     hostname: algomon-api-caller
