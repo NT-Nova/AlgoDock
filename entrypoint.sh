@@ -334,12 +334,12 @@ main() {
             start_node
         else
             log_info "Initiating fast catchup..."
-            if apply_fast_catchup; then
-                log_info "Catchup process finished successfully. Starting node normally."
-                start_node
-            else
-                exit_with_error "Fast catchup failed."
-            fi
+            # if apply_fast_catchup; then
+            #     log_info "Catchup process finished successfully. Starting node normally."
+            #     start_node
+            # else
+            #     exit_with_error "Fast catchup failed."
+            # fi
         fi
     fi
 

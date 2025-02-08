@@ -26,12 +26,12 @@ services:
     environment:
       ALGOD_ADDRESS: "http://0.0.0.0:8080"  # Use container-wide accessible address
       NETWORK: "mainnet"
-      # START_KMD: 1
+      START_KMD: 1
       # TELEMETRY_NAME: algomon-algonode
       TOKEN: 17325eb71851bc539a923d7c5171d64073c314a0dd1e4a613d1c82fb91baf277
       ADMIN_TOKEN: 17325eb71851bc539a923d7c5171d64073c314a0dd1e4a613d1c82fb91baf277
       KMD_TOKEN: 17325eb71851bc539a923d7c5171d64073c314a0dd1e4a613d1c82fb91baf277
-      # FAST_CATCHUP: 1
+      FAST_CATCHUP: 1
     networks:
       - algorand-network
 
